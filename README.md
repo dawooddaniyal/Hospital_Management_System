@@ -1,2 +1,2 @@
 # Hospital_Management_System
-An C++ OOP project that models real life hospital management system.
+A C++ OOP project that models a real-life hospital management system.
