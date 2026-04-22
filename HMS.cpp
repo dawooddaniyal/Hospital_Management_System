@@ -169,12 +169,13 @@ public:
     void bedMenu() {
         int choice = 0;
         while (choice != 4) {
-            cout << "\n[Bed Management]\n"
-                 << "1. Add/Update beds\n"
-                 << "2. View beds\n"
-                 << "3. Remove bed\n"
-                 << "4. Back\n"
-                 << "Choice: ";
+            cout << endl;
+            cout << "[Bed Management]" << endl;
+            cout << "1. Add/Update beds" << endl;
+            cout << "2. View beds" << endl;
+            cout << "3. Remove bed" << endl;
+            cout << "4. Back" << endl;
+            cout << "Choice: ";
             cin >> choice;
             switch (choice) {
                 case 1: set(); break;
@@ -289,13 +290,14 @@ public:
     void medicineMenu() {
         int choice = 0;
         while (choice != 5) {
-            cout << "\n[Medicine Management]\n"
-                 << "1. Add medicines\n"
-                 << "2. Display medicines\n"
-                 << "3. Remove medicine\n"
-                 << "4. Update stock\n"
-                 << "5. Back\n"
-                 << "Choice: ";
+            cout << endl;
+            cout << "[Medicine Management]" << endl;
+            cout << "1. Add medicines" << endl;
+            cout << "2. Display medicines" << endl;
+            cout << "3. Remove medicine" << endl;
+            cout << "4. Update stock" << endl;
+            cout << "5. Back" << endl;
+            cout << "Choice: ";
             cin >> choice;
             switch (choice) {
                 case 1: set(); break;
@@ -344,11 +346,11 @@ public:
     }
 
     void patientHistory() const {
-        cout << "Patient ID: " << info.pID << "\n"
-             << "Name: " << info.name << "\n"
-             << "CNIC: " << info.cnic << "\n"
-             << "Disease: " << info.disease << "\n"
-             << "Admit Date: " << info.dateAdmit << endl;
+        cout << "Patient ID: " << info.pID << endl;
+        cout << "Name: " << info.name << endl;
+        cout << "CNIC: " << info.cnic << endl;
+        cout << "Disease: " << info.disease << endl;
+        cout << "Admit Date: " << info.dateAdmit << endl;
     }
 
     void addMedication(MedManagement &medManager) {
@@ -395,24 +397,15 @@ public:
         float bedCharges = (float)(bedChargePerDay * days);
         float total = medCharges + bedCharges;
 
-        cout << "\nBill Summary\n"
-             << "Medication Charges: " << medCharges << "\n"
-             << "Bed Charges: " << bedCharges << "\n"
-             << "Total: " << total << endl;
+        cout << endl;
+        cout << "Bill Summary" << endl;
+        cout << "Medication Charges: " << medCharges << endl;
+        cout << "Bed Charges: " << bedCharges << endl;
+        cout << "Total: " << total << endl;
     }
 };
 
 int Patient::nextId = 0;
-
-BedManagement &defaultBedManager() {
-    static BedManagement instance;
-    return instance;
-}
-
-MedManagement &defaultMedManager() {
-    static MedManagement instance;
-    return instance;
-}
 
 class PatientManagement {
 private:
@@ -428,7 +421,7 @@ private:
     }
 
 public:
-    PatientManagement(BedManagement &b = defaultBedManager(), MedManagement &m = defaultMedManager())
+    PatientManagement(BedManagement &b, MedManagement &m)
         : bedManager(b), medManager(m) {}
 
     void addPatient() {
@@ -478,13 +471,14 @@ public:
 
         int choice = 0;
         while (choice != 5) {
-            cout << "\n[Patient Menu]\n"
-                 << "1. Show history\n"
-                 << "2. Add medication\n"
-                 << "3. Display medications\n"
-                 << "4. Generate bill\n"
-                 << "5. Back\n"
-                 << "Choice: ";
+            cout << endl;
+            cout << "[Patient Menu]" << endl;
+            cout << "1. Show history" << endl;
+            cout << "2. Add medication" << endl;
+            cout << "3. Display medications" << endl;
+            cout << "4. Generate bill" << endl;
+            cout << "5. Back" << endl;
+            cout << "Choice: ";
             cin >> choice;
             switch (choice) {
                 case 1: patients[idx].patientHistory(); break;
@@ -500,12 +494,13 @@ public:
     void patientManagementMenu() {
         int choice = 0;
         while (choice != 4) {
-            cout << "\n[Patient Management]\n"
-                 << "1. Add patient\n"
-                 << "2. Remove patient\n"
-                 << "3. Manage patient\n"
-                 << "4. Back\n"
-                 << "Choice: ";
+            cout << endl;
+            cout << "[Patient Management]" << endl;
+            cout << "1. Add patient" << endl;
+            cout << "2. Remove patient" << endl;
+            cout << "3. Manage patient" << endl;
+            cout << "4. Back" << endl;
+            cout << "Choice: ";
             cin >> choice;
             switch (choice) {
                 case 1: addPatient(); break;
@@ -542,12 +537,13 @@ public:
     void menu() {
         int choice = 0;
         while (choice != 4) {
-            cout << "\nWelcome to Hospital Management System\n"
-                 << "1. Patient Management\n"
-                 << "2. Medicine Management\n"
-                 << "3. Bed Management\n"
-                 << "4. Exit\n"
-                 << "Choice: ";
+            cout << endl;
+            cout << "Welcome to Hospital Management System" << endl;
+            cout << "1. Patient Management" << endl;
+            cout << "2. Medicine Management" << endl;
+            cout << "3. Bed Management" << endl;
+            cout << "4. Exit" << endl;
+            cout << "Choice: ";
             cin >> choice;
             switch (choice) {
                 case 1: patientManager.patientManagementMenu(); break;
