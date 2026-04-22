@@ -5,6 +5,72 @@
 using namespace std;
 
 struct Bed {
+
+    int bId;
+    int pBed;
+    bool reserved;
+    int bedCharges;
+
+    Bed() {
+        bId = 0;
+        pBed = 0;
+        reserved = false;
+        bedCharges = 1000;
+    }
+    Bed(int id, int patientBed, bool isReserved, int charges) {
+        bId = id;
+        pBed = patientBed;
+        reserved = isReserved;
+        bedCharges = charges;
+    }
+};
+
+struct Medicine {
+    int mID;
+    string name;
+    string type;
+    int stock;
+    float pricePerItem;
+
+    Medicine() {
+        mID = 0;
+        name = "";
+        type = "";
+        stock = 0;
+        pricePerItem = 0.0F;
+    }
+};
+
+struct Medication {
+    int medicineId;
+    string name;
+    string type;
+    int quantity;
+    float price;
+
+    Medication() {
+        medicineId = 0;
+        name = "";
+        type = "";
+        quantity = 0;
+        price = 0.0F;
+    }
+};
+
+struct PatientInfo {
+    int pID;
+    string name;
+    string disease;
+    string dateAdmit;
+    long long cnic;
+
+    PatientInfo() {
+        pID = 0;
+        name = "";
+        disease = "";
+        dateAdmit = "";
+        cnic = 0;
+    }
     int bId{};
     int pBed{};
     bool reserved{};
@@ -98,6 +164,11 @@ public:
             int newCharge = 0;
             cout << "Enter new bed charge: ";
             cin >> newCharge;
+
+            if (newCharge < 0) {
+                cout << "Bed charge cannot be negative.\n";
+                return;
+            }
             for (auto &bed : beds) bed.bedCharges = newCharge;
             cout << "Updated bed charges to " << newCharge << "\n";
         } else {
@@ -183,6 +254,17 @@ public:
             cin >> m.name;
             cout << "Enter price per item: ";
             cin >> m.pricePerItem;
+
+            if (m.pricePerItem < 0) {
+                cout << "Price cannot be negative.\n";
+                continue;
+            }
+            cout << "Enter stock: ";
+            cin >> m.stock;
+            if (m.stock < 0) {
+                cout << "Stock cannot be negative.\n";
+                continue;
+            }
             cout << "Enter stock: ";
             cin >> m.stock;
             medics.push_back(m);
@@ -226,6 +308,11 @@ public:
         }
         cout << "Enter stock to add: ";
         cin >> add;
+
+        if (add < 0) {
+            cout << "Stock increment cannot be negative.\n";
+            return;
+        }
         medics[id].stock += add;
         cout << "New stock for " << medics[id].name << ": " << medics[id].stock << "\n";
     }
@@ -278,9 +365,16 @@ public:
     int id() const { return info.pID; }
     long long cnic() const { return info.cnic; }
 
+    void setCnic(long long value) { info.cnic = value; }
+
     void set() {
         cout << "Enter patient name: ";
         cin >> info.name;
+
+        if (info.cnic == 0) {
+            cout << "Enter patient CNIC: ";
+            cin >> info.cnic;
+        }
         cout << "Enter patient CNIC: ";
         cin >> info.cnic;
         cout << "Enter disease: ";
@@ -330,6 +424,11 @@ public:
         cout << "Enter number of days stayed: ";
         cin >> days;
 
+        if (days < 0) {
+            cout << "Days cannot be negative.\n";
+            return;
+        }
+
         float medCharges = 0.0F;
         for (const auto &m : meds) medCharges += m.price * m.quantity;
         float bedCharges = static_cast<float>(bedChargePerDay * days);
@@ -361,6 +460,18 @@ public:
     PatientManagement(BedManagement &b, MedManagement &m) : bedManager(b), medManager(m) {}
 
     void addPatient() {
+
+        long long cnic = 0;
+        cout << "Enter patient CNIC: ";
+        cin >> cnic;
+        if (findIndexByCnic(cnic) != -1) {
+            cout << "Patient with this CNIC already exists.\n";
+            return;
+        }
+
+        Patient p;
+        p.setCnic(cnic);
+        p.set();
         Patient p;
         p.set();
         if (findIndexByCnic(p.cnic()) != -1) {
@@ -443,6 +554,19 @@ public:
 };
 
 struct UserLogin {
+
+    int uID;
+    string pwd;
+
+    UserLogin() {
+        uID = 0;
+        pwd = "";
+    }
+    UserLogin(int userId, const string &password) {
+        uID = userId;
+        pwd = password;
+    }
+
     int uID{};
     string pwd;
 };
