@@ -46,7 +46,7 @@ public:
     BedManagement(int initialBedCount = 10, int defaultCharge = 1000) {
         beds.reserve(initialBedCount);
         for (int i = 0; i < initialBedCount; ++i) {
-            Bed bed{};
+            Bed bed;
             bed.bId = i;
             bed.pBed = 0;
             bed.reserved = false;
@@ -56,7 +56,8 @@ public:
     }
 
     bool assignBed(int patientId) {
-        for (auto &bed : beds) {
+        for (int i = 0; i < (int)beds.size(); i++) {
+            Bed &bed = beds[i];
             if (!bed.reserved) {
                 bed.reserved = true;
                 bed.pBed = patientId;
@@ -69,7 +70,8 @@ public:
     }
 
     void resignBed(int patientId) {
-        for (auto &bed : beds) {
+        for (int i = 0; i < (int)beds.size(); i++) {
+            Bed &bed = beds[i];
             if (bed.reserved && bed.pBed == patientId) {
                 bed.reserved = false;
                 bed.pBed = 0;
@@ -97,7 +99,7 @@ public:
                 cout << "Invalid number.\n";
                 return;
             }
-            int start = static_cast<int>(beds.size());
+            int start = (int)beds.size();
             for (int i = 0; i < toAdd; ++i) {
                 beds.push_back({start + i, 0, false, currentBedCharges()});
             }
@@ -110,7 +112,9 @@ public:
                 cout << "Bed charge cannot be negative.\n";
                 return;
             }
-            for (auto &bed : beds) bed.bedCharges = newCharge;
+            for (int i = 0; i < (int)beds.size(); i++) {
+                beds[i].bedCharges = newCharge;
+            }
             cout << "Updated bed charges to " << newCharge << "\n";
         } else {
             cout << "Invalid choice.\n";
@@ -124,12 +128,14 @@ public:
 
         switch (choice) {
             case 0:
-                for (const auto &bed : beds) {
+                for (int i = 0; i < (int)beds.size(); i++) {
+                    const Bed &bed = beds[i];
                     if (!bed.reserved) cout << "Bed " << bed.bId << " is available.\n";
                 }
                 break;
             case 1:
-                for (const auto &bed : beds) {
+                for (int i = 0; i < (int)beds.size(); i++) {
+                    const Bed &bed = beds[i];
                     if (bed.reserved) cout << "Bed " << bed.bId << " is reserved by patient #" << bed.pBed << ".\n";
                 }
                 break;
@@ -145,7 +151,7 @@ public:
         int id = 0;
         cout << "Enter bed ID to remove: ";
         cin >> id;
-        if (id < 0 || id >= static_cast<int>(beds.size())) {
+        if (id < 0 || id >= (int)beds.size()) {
             cout << "Invalid bed ID.\n";
             return;
         }
@@ -154,7 +160,7 @@ public:
             return;
         }
         beds.erase(beds.begin() + id);
-        for (int i = 0; i < static_cast<int>(beds.size()); ++i) beds[i].bId = i;
+        for (int i = 0; i < (int)beds.size(); ++i) beds[i].bId = i;
         cout << "Bed removed.\n";
     }
 
@@ -194,7 +200,7 @@ public:
         char more = 'y';
         while (more == 'y' || more == 'Y') {
             Medicine m;
-            m.mID = static_cast<int>(medics.size());
+            m.mID = (int)medics.size();
             m.name = "";
             m.type = "";
             m.stock = 0;
@@ -227,7 +233,8 @@ public:
             cout << "No medicines available.\n";
             return;
         }
-        for (const auto &m : medics) {
+        for (int i = 0; i < (int)medics.size(); i++) {
+            const Medicine &m = medics[i];
             cout << "ID: " << m.mID << ", Name: " << m.name << ", Type: " << m.type
                  << ", Stock: " << m.stock << ", Price: " << m.pricePerItem << "\n";
         }
@@ -237,12 +244,12 @@ public:
         int id = 0;
         cout << "Enter medicine ID to remove: ";
         cin >> id;
-        if (id < 0 || id >= static_cast<int>(medics.size())) {
+        if (id < 0 || id >= (int)medics.size()) {
             cout << "Invalid ID.\n";
             return;
         }
         medics.erase(medics.begin() + id);
-        for (int i = 0; i < static_cast<int>(medics.size()); ++i) medics[i].mID = i;
+        for (int i = 0; i < (int)medics.size(); ++i) medics[i].mID = i;
         cout << "Medicine removed.\n";
     }
 
@@ -250,7 +257,7 @@ public:
         int id = 0, add = 0;
         cout << "Enter medicine ID: ";
         cin >> id;
-        if (id < 0 || id >= static_cast<int>(medics.size())) {
+        if (id < 0 || id >= (int)medics.size()) {
             cout << "Invalid ID.\n";
             return;
         }
@@ -265,7 +272,7 @@ public:
     }
 
     bool consumeMedicine(int id, int qty, Medication &out) {
-        if (id < 0 || id >= static_cast<int>(medics.size())) return false;
+        if (id < 0 || id >= (int)medics.size()) return false;
         if (qty <= 0 || medics[id].stock < qty) return false;
 
         medics[id].stock -= qty;
@@ -363,7 +370,8 @@ public:
             cout << "No medications given.\n";
             return;
         }
-        for (const auto &m : meds) {
+        for (int i = 0; i < (int)meds.size(); i++) {
+            const Medication &m = meds[i];
             cout << "- " << m.name << " (" << m.type << "), qty=" << m.quantity
                  << ", unit price=" << m.price << "\n";
         }
@@ -379,8 +387,10 @@ public:
         }
 
         float medCharges = 0.0F;
-        for (const auto &m : meds) medCharges += m.price * m.quantity;
-        float bedCharges = static_cast<float>(bedChargePerDay * days);
+        for (int i = 0; i < (int)meds.size(); i++) {
+            medCharges += meds[i].price * meds[i].quantity;
+        }
+        float bedCharges = (float)(bedChargePerDay * days);
         float total = medCharges + bedCharges;
 
         cout << "\nBill Summary\n"
@@ -409,7 +419,7 @@ private:
     MedManagement &medManager;
 
     int findIndexByCnic(long long cnic) const {
-        for (int i = 0; i < static_cast<int>(patients.size()); ++i) {
+        for (int i = 0; i < (int)patients.size(); ++i) {
             if (patients[i].cnic() == cnic) return i;
         }
         return -1;
@@ -521,7 +531,7 @@ private:
 public:
     HMS(int defaultUserId = 4040, const string &defaultPassword = "Admin")
         : patientManager(bedManager, medManager) {
-        UserLogin user{};
+        UserLogin user;
         user.uID = defaultUserId;
         user.pwd = defaultPassword;
         loginInfo.push_back(user);
