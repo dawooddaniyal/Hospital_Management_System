@@ -61,11 +61,11 @@ public:
             if (!bed.reserved) {
                 bed.reserved = true;
                 bed.pBed = patientId;
-                cout << "Bed " << bed.bId << " assigned to patient #" << patientId << "\n";
+                cout << "Bed " << bed.bId << " assigned to patient #" << patientId << endl;
                 return true;
             }
         }
-        cout << "No bed available.\n";
+        cout << "No bed available." << endl;
         return false;
     }
 
@@ -75,14 +75,16 @@ public:
             if (bed.reserved && bed.pBed == patientId) {
                 bed.reserved = false;
                 bed.pBed = 0;
-                cout << "Bed " << bed.bId << " released.\n";
+                cout << "Bed " << bed.bId << " released." << endl;
                 return;
             }
         }
     }
 
     int currentBedCharges() const {
-        if (beds.empty()) return 0;
+        if (beds.empty()) {
+            return 0;
+        }
         return beds.front().bedCharges;
     }
 
@@ -96,28 +98,28 @@ public:
             cout << "Enter number of beds to add: ";
             cin >> toAdd;
             if (toAdd <= 0) {
-                cout << "Invalid number.\n";
+                cout << "Invalid number." << endl;
                 return;
             }
             int start = (int)beds.size();
             for (int i = 0; i < toAdd; ++i) {
                 beds.push_back({start + i, 0, false, currentBedCharges()});
             }
-            cout << "Total beds: " << beds.size() << "\n";
+            cout << "Total beds: " << beds.size() << endl;
         } else if (choice == 2) {
             int newCharge = 0;
             cout << "Enter new bed charge: ";
             cin >> newCharge;
             if (newCharge < 0) {
-                cout << "Bed charge cannot be negative.\n";
+                cout << "Bed charge cannot be negative." << endl;
                 return;
             }
             for (int i = 0; i < (int)beds.size(); i++) {
                 beds[i].bedCharges = newCharge;
             }
-            cout << "Updated bed charges to " << newCharge << "\n";
+            cout << "Updated bed charges to " << newCharge << endl;
         } else {
-            cout << "Invalid choice.\n";
+            cout << "Invalid choice." << endl;
         }
     }
 
@@ -130,20 +132,20 @@ public:
             case 0:
                 for (int i = 0; i < (int)beds.size(); i++) {
                     const Bed &bed = beds[i];
-                    if (!bed.reserved) cout << "Bed " << bed.bId << " is available.\n";
+                    if (!bed.reserved) cout << "Bed " << bed.bId << " is available." << endl;
                 }
                 break;
             case 1:
                 for (int i = 0; i < (int)beds.size(); i++) {
                     const Bed &bed = beds[i];
-                    if (bed.reserved) cout << "Bed " << bed.bId << " is reserved by patient #" << bed.pBed << ".\n";
+                    if (bed.reserved) cout << "Bed " << bed.bId << " is reserved by patient #" << bed.pBed << "." << endl;
                 }
                 break;
             case 2:
-                cout << "Total beds: " << beds.size() << "\n";
+                cout << "Total beds: " << beds.size() << endl;
                 break;
             default:
-                cout << "Invalid choice.\n";
+                cout << "Invalid choice." << endl;
         }
     }
 
@@ -152,16 +154,16 @@ public:
         cout << "Enter bed ID to remove: ";
         cin >> id;
         if (id < 0 || id >= (int)beds.size()) {
-            cout << "Invalid bed ID.\n";
+            cout << "Invalid bed ID." << endl;
             return;
         }
         if (beds[id].reserved) {
-            cout << "Cannot remove reserved bed.\n";
+            cout << "Cannot remove reserved bed." << endl;
             return;
         }
         beds.erase(beds.begin() + id);
         for (int i = 0; i < (int)beds.size(); ++i) beds[i].bId = i;
-        cout << "Bed removed.\n";
+        cout << "Bed removed." << endl;
     }
 
     void bedMenu() {
@@ -179,7 +181,7 @@ public:
                 case 2: get(); break;
                 case 3: removeBed(); break;
                 case 4: break;
-                default: cout << "Invalid choice.\n";
+                default: cout << "Invalid choice." << endl;
             }
         }
     }
@@ -212,13 +214,13 @@ public:
             cout << "Enter price per item: ";
             cin >> m.pricePerItem;
             if (m.pricePerItem < 0) {
-                cout << "Price cannot be negative.\n";
+                cout << "Price cannot be negative." << endl;
                 continue;
             }
             cout << "Enter stock: ";
             cin >> m.stock;
             if (m.stock < 0) {
-                cout << "Stock cannot be negative.\n";
+                cout << "Stock cannot be negative." << endl;
                 continue;
             }
             medics.push_back(m);
@@ -230,13 +232,13 @@ public:
 
     void get() const {
         if (medics.empty()) {
-            cout << "No medicines available.\n";
+            cout << "No medicines available." << endl;
             return;
         }
         for (int i = 0; i < (int)medics.size(); i++) {
             const Medicine &m = medics[i];
             cout << "ID: " << m.mID << ", Name: " << m.name << ", Type: " << m.type
-                 << ", Stock: " << m.stock << ", Price: " << m.pricePerItem << "\n";
+                 << ", Stock: " << m.stock << ", Price: " << m.pricePerItem << endl;
         }
     }
 
@@ -245,12 +247,12 @@ public:
         cout << "Enter medicine ID to remove: ";
         cin >> id;
         if (id < 0 || id >= (int)medics.size()) {
-            cout << "Invalid ID.\n";
+            cout << "Invalid ID." << endl;
             return;
         }
         medics.erase(medics.begin() + id);
         for (int i = 0; i < (int)medics.size(); ++i) medics[i].mID = i;
-        cout << "Medicine removed.\n";
+        cout << "Medicine removed." << endl;
     }
 
     void updateStock() {
@@ -258,17 +260,17 @@ public:
         cout << "Enter medicine ID: ";
         cin >> id;
         if (id < 0 || id >= (int)medics.size()) {
-            cout << "Invalid ID.\n";
+            cout << "Invalid ID." << endl;
             return;
         }
         cout << "Enter stock to add: ";
         cin >> add;
         if (add < 0) {
-            cout << "Stock increment cannot be negative.\n";
+            cout << "Stock increment cannot be negative." << endl;
             return;
         }
         medics[id].stock += add;
-        cout << "New stock for " << medics[id].name << ": " << medics[id].stock << "\n";
+        cout << "New stock for " << medics[id].name << ": " << medics[id].stock << endl;
     }
 
     bool consumeMedicine(int id, int qty, Medication &out) {
@@ -301,7 +303,7 @@ public:
                 case 3: removeItem(); break;
                 case 4: updateStock(); break;
                 case 5: break;
-                default: cout << "Invalid choice.\n";
+                default: cout << "Invalid choice." << endl;
             }
         }
     }
@@ -338,7 +340,7 @@ public:
         cin >> info.disease;
         cout << "Enter admit date (yyyy/mm/dd): ";
         cin >> info.dateAdmit;
-        cout << "Assigned patient ID: " << info.pID << "\n";
+        cout << "Assigned patient ID: " << info.pID << endl;
     }
 
     void patientHistory() const {
@@ -346,7 +348,7 @@ public:
              << "Name: " << info.name << "\n"
              << "CNIC: " << info.cnic << "\n"
              << "Disease: " << info.disease << "\n"
-             << "Admit Date: " << info.dateAdmit << "\n";
+             << "Admit Date: " << info.dateAdmit << endl;
     }
 
     void addMedication(MedManagement &medManager) {
@@ -359,21 +361,21 @@ public:
         Medication med;
         if (medManager.consumeMedicine(medId, qty, med)) {
             meds.push_back(med);
-            cout << "Medication added to patient.\n";
+            cout << "Medication added to patient." << endl;
         } else {
-            cout << "Unable to add medication (invalid ID or insufficient stock).\n";
+            cout << "Unable to add medication (invalid ID or insufficient stock)." << endl;
         }
     }
 
     void displayMedication() const {
         if (meds.empty()) {
-            cout << "No medications given.\n";
+            cout << "No medications given." << endl;
             return;
         }
         for (int i = 0; i < (int)meds.size(); i++) {
             const Medication &m = meds[i];
             cout << "- " << m.name << " (" << m.type << "), qty=" << m.quantity
-                 << ", unit price=" << m.price << "\n";
+                 << ", unit price=" << m.price << endl;
         }
     }
 
@@ -382,7 +384,7 @@ public:
         cout << "Enter number of days stayed: ";
         cin >> days;
         if (days < 0) {
-            cout << "Days cannot be negative.\n";
+            cout << "Days cannot be negative." << endl;
             return;
         }
 
@@ -396,7 +398,7 @@ public:
         cout << "\nBill Summary\n"
              << "Medication Charges: " << medCharges << "\n"
              << "Bed Charges: " << bedCharges << "\n"
-             << "Total: " << total << "\n";
+             << "Total: " << total << endl;
     }
 };
 
@@ -434,7 +436,7 @@ public:
         cout << "Enter patient CNIC: ";
         cin >> cnic;
         if (findIndexByCnic(cnic) != -1) {
-            cout << "Patient with this CNIC already exists.\n";
+            cout << "Patient with this CNIC already exists." << endl;
             return;
         }
 
@@ -442,11 +444,11 @@ public:
         p.setCnic(cnic);
         p.set();
         if (!bedManager.assignBed(p.id())) {
-            cout << "Patient not added because no bed is available.\n";
+            cout << "Patient not added because no bed is available." << endl;
             return;
         }
         patients.push_back(p);
-        cout << "Patient added successfully.\n";
+        cout << "Patient added successfully." << endl;
     }
 
     void removePatient() {
@@ -455,13 +457,13 @@ public:
         cin >> cnic;
         int idx = findIndexByCnic(cnic);
         if (idx == -1) {
-            cout << "Patient not found.\n";
+            cout << "Patient not found." << endl;
             return;
         }
 
         bedManager.resignBed(patients[idx].id());
         patients.erase(patients.begin() + idx);
-        cout << "Patient removed successfully.\n";
+        cout << "Patient removed successfully." << endl;
     }
 
     void managePatient() {
@@ -470,7 +472,7 @@ public:
         cin >> cnic;
         int idx = findIndexByCnic(cnic);
         if (idx == -1) {
-            cout << "Patient not found.\n";
+            cout << "Patient not found." << endl;
             return;
         }
 
@@ -490,7 +492,7 @@ public:
                 case 3: patients[idx].displayMedication(); break;
                 case 4: patients[idx].generateBill(bedManager.currentBedCharges()); break;
                 case 5: break;
-                default: cout << "Invalid choice.\n";
+                default: cout << "Invalid choice." << endl;
             }
         }
     }
@@ -510,7 +512,7 @@ public:
                 case 2: removePatient(); break;
                 case 3: managePatient(); break;
                 case 4: break;
-                default: cout << "Invalid choice.\n";
+                default: cout << "Invalid choice." << endl;
             }
         }
     }
@@ -551,8 +553,8 @@ public:
                 case 1: patientManager.patientManagementMenu(); break;
                 case 2: medManager.medicineMenu(); break;
                 case 3: bedManager.bedMenu(); break;
-                case 4: cout << "Goodbye.\n"; break;
-                default: cout << "Invalid choice.\n";
+                case 4: cout << "Goodbye." << endl; break;
+                default: cout << "Invalid choice." << endl;
             }
         }
     }
