@@ -5,6 +5,7 @@
 using namespace std;
 
 struct Bed {
+
     int bId;
     int pBed;
     bool reserved;
@@ -70,6 +71,34 @@ struct PatientInfo {
         dateAdmit = "";
         cnic = 0;
     }
+    int bId{};
+    int pBed{};
+    bool reserved{};
+    int bedCharges{1000};
+};
+
+struct Medicine {
+    int mID{};
+    string name;
+    string type;
+    int stock{};
+    float pricePerItem{};
+};
+
+struct Medication {
+    int medicineId{};
+    string name;
+    string type;
+    int quantity{};
+    float price{};
+};
+
+struct PatientInfo {
+    int pID{};
+    string name;
+    string disease;
+    string dateAdmit;
+    long long cnic{};
 };
 
 class BedManagement {
@@ -135,6 +164,7 @@ public:
             int newCharge = 0;
             cout << "Enter new bed charge: ";
             cin >> newCharge;
+
             if (newCharge < 0) {
                 cout << "Bed charge cannot be negative.\n";
                 return;
@@ -224,6 +254,7 @@ public:
             cin >> m.name;
             cout << "Enter price per item: ";
             cin >> m.pricePerItem;
+
             if (m.pricePerItem < 0) {
                 cout << "Price cannot be negative.\n";
                 continue;
@@ -234,6 +265,8 @@ public:
                 cout << "Stock cannot be negative.\n";
                 continue;
             }
+            cout << "Enter stock: ";
+            cin >> m.stock;
             medics.push_back(m);
 
             cout << "Add more medicines? (y/n): ";
@@ -275,6 +308,7 @@ public:
         }
         cout << "Enter stock to add: ";
         cin >> add;
+
         if (add < 0) {
             cout << "Stock increment cannot be negative.\n";
             return;
@@ -330,15 +364,19 @@ public:
 
     int id() const { return info.pID; }
     long long cnic() const { return info.cnic; }
+
     void setCnic(long long value) { info.cnic = value; }
 
     void set() {
         cout << "Enter patient name: ";
         cin >> info.name;
+
         if (info.cnic == 0) {
             cout << "Enter patient CNIC: ";
             cin >> info.cnic;
         }
+        cout << "Enter patient CNIC: ";
+        cin >> info.cnic;
         cout << "Enter disease: ";
         cin >> info.disease;
         cout << "Enter admit date (yyyy/mm/dd): ";
@@ -385,6 +423,7 @@ public:
         int days = 0;
         cout << "Enter number of days stayed: ";
         cin >> days;
+
         if (days < 0) {
             cout << "Days cannot be negative.\n";
             return;
@@ -421,6 +460,7 @@ public:
     PatientManagement(BedManagement &b, MedManagement &m) : bedManager(b), medManager(m) {}
 
     void addPatient() {
+
         long long cnic = 0;
         cout << "Enter patient CNIC: ";
         cin >> cnic;
@@ -432,6 +472,12 @@ public:
         Patient p;
         p.setCnic(cnic);
         p.set();
+        Patient p;
+        p.set();
+        if (findIndexByCnic(p.cnic()) != -1) {
+            cout << "Patient with this CNIC already exists.\n";
+            return;
+        }
         if (!bedManager.assignBed(p.id())) {
             cout << "Patient not added because no bed is available.\n";
             return;
@@ -508,6 +554,7 @@ public:
 };
 
 struct UserLogin {
+
     int uID;
     string pwd;
 
@@ -519,6 +566,9 @@ struct UserLogin {
         uID = userId;
         pwd = password;
     }
+
+    int uID{};
+    string pwd;
 };
 
 class HMS {
