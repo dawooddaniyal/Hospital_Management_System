@@ -5,24 +5,10 @@
 using namespace std;
 
 struct Bed {
-
     int bId;
     int pBed;
     bool reserved;
     int bedCharges;
-
-    Bed() {
-        bId = 0;
-        pBed = 0;
-        reserved = false;
-        bedCharges = 1000;
-    }
-    Bed(int id, int patientBed, bool isReserved, int charges) {
-        bId = id;
-        pBed = patientBed;
-        reserved = isReserved;
-        bedCharges = charges;
-    }
 };
 
 struct Medicine {
@@ -32,13 +18,6 @@ struct Medicine {
     int stock;
     float pricePerItem;
 
-    Medicine() {
-        mID = 0;
-        name = "";
-        type = "";
-        stock = 0;
-        pricePerItem = 0.0F;
-    }
 };
 
 struct Medication {
@@ -48,13 +27,6 @@ struct Medication {
     int quantity;
     float price;
 
-    Medication() {
-        medicineId = 0;
-        name = "";
-        type = "";
-        quantity = 0;
-        price = 0.0F;
-    }
 };
 
 struct PatientInfo {
@@ -64,41 +36,6 @@ struct PatientInfo {
     string dateAdmit;
     long long cnic;
 
-    PatientInfo() {
-        pID = 0;
-        name = "";
-        disease = "";
-        dateAdmit = "";
-        cnic = 0;
-    }
-    int bId{};
-    int pBed{};
-    bool reserved{};
-    int bedCharges{1000};
-};
-
-struct Medicine {
-    int mID{};
-    string name;
-    string type;
-    int stock{};
-    float pricePerItem{};
-};
-
-struct Medication {
-    int medicineId{};
-    string name;
-    string type;
-    int quantity{};
-    float price{};
-};
-
-struct PatientInfo {
-    int pID{};
-    string name;
-    string disease;
-    string dateAdmit;
-    long long cnic{};
 };
 
 class BedManagement {
@@ -106,10 +43,15 @@ private:
     vector<Bed> beds;
 
 public:
-    BedManagement() {
-        beds.reserve(10);
-        for (int i = 0; i < 10; ++i) {
-            beds.push_back({i, 0, false, 1000});
+    BedManagement(int initialBedCount = 10, int defaultCharge = 1000) {
+        beds.reserve(initialBedCount);
+        for (int i = 0; i < initialBedCount; ++i) {
+            Bed bed{};
+            bed.bId = i;
+            bed.pBed = 0;
+            bed.reserved = false;
+            bed.bedCharges = defaultCharge;
+            beds.push_back(bed);
         }
     }
 
@@ -164,7 +106,6 @@ public:
             int newCharge = 0;
             cout << "Enter new bed charge: ";
             cin >> newCharge;
-
             if (newCharge < 0) {
                 cout << "Bed charge cannot be negative.\n";
                 return;
@@ -243,18 +184,27 @@ private:
     vector<Medicine> medics;
 
 public:
+    MedManagement(int reserveCount = 0) {
+        if (reserveCount > 0) {
+            medics.reserve(reserveCount);
+        }
+    }
+
     void set() {
         char more = 'y';
         while (more == 'y' || more == 'Y') {
             Medicine m;
             m.mID = static_cast<int>(medics.size());
+            m.name = "";
+            m.type = "";
+            m.stock = 0;
+            m.pricePerItem = 0.0F;
             cout << "Enter medicine type: ";
             cin >> m.type;
             cout << "Enter medicine name: ";
             cin >> m.name;
             cout << "Enter price per item: ";
             cin >> m.pricePerItem;
-
             if (m.pricePerItem < 0) {
                 cout << "Price cannot be negative.\n";
                 continue;
@@ -265,8 +215,6 @@ public:
                 cout << "Stock cannot be negative.\n";
                 continue;
             }
-            cout << "Enter stock: ";
-            cin >> m.stock;
             medics.push_back(m);
 
             cout << "Add more medicines? (y/n): ";
@@ -308,7 +256,6 @@ public:
         }
         cout << "Enter stock to add: ";
         cin >> add;
-
         if (add < 0) {
             cout << "Stock increment cannot be negative.\n";
             return;
@@ -360,23 +307,26 @@ private:
     vector<Medication> meds;
 
 public:
-    Patient() { info.pID = ++nextId; }
+    Patient(long long presetCnic = 0, const string &presetName = "", const string &presetDisease = "",
+            const string &presetDate = "") {
+        info.pID = ++nextId;
+        info.cnic = presetCnic;
+        info.name = presetName;
+        info.disease = presetDisease;
+        info.dateAdmit = presetDate;
+    }
 
     int id() const { return info.pID; }
     long long cnic() const { return info.cnic; }
-
     void setCnic(long long value) { info.cnic = value; }
 
     void set() {
         cout << "Enter patient name: ";
         cin >> info.name;
-
         if (info.cnic == 0) {
             cout << "Enter patient CNIC: ";
             cin >> info.cnic;
         }
-        cout << "Enter patient CNIC: ";
-        cin >> info.cnic;
         cout << "Enter disease: ";
         cin >> info.disease;
         cout << "Enter admit date (yyyy/mm/dd): ";
@@ -423,7 +373,6 @@ public:
         int days = 0;
         cout << "Enter number of days stayed: ";
         cin >> days;
-
         if (days < 0) {
             cout << "Days cannot be negative.\n";
             return;
@@ -443,6 +392,16 @@ public:
 
 int Patient::nextId = 0;
 
+BedManagement &defaultBedManager() {
+    static BedManagement instance;
+    return instance;
+}
+
+MedManagement &defaultMedManager() {
+    static MedManagement instance;
+    return instance;
+}
+
 class PatientManagement {
 private:
     vector<Patient> patients;
@@ -457,10 +416,10 @@ private:
     }
 
 public:
-    PatientManagement(BedManagement &b, MedManagement &m) : bedManager(b), medManager(m) {}
+    PatientManagement(BedManagement &b = defaultBedManager(), MedManagement &m = defaultMedManager())
+        : bedManager(b), medManager(m) {}
 
     void addPatient() {
-
         long long cnic = 0;
         cout << "Enter patient CNIC: ";
         cin >> cnic;
@@ -472,12 +431,6 @@ public:
         Patient p;
         p.setCnic(cnic);
         p.set();
-        Patient p;
-        p.set();
-        if (findIndexByCnic(p.cnic()) != -1) {
-            cout << "Patient with this CNIC already exists.\n";
-            return;
-        }
         if (!bedManager.assignBed(p.id())) {
             cout << "Patient not added because no bed is available.\n";
             return;
@@ -554,20 +507,7 @@ public:
 };
 
 struct UserLogin {
-
     int uID;
-    string pwd;
-
-    UserLogin() {
-        uID = 0;
-        pwd = "";
-    }
-    UserLogin(int userId, const string &password) {
-        uID = userId;
-        pwd = password;
-    }
-
-    int uID{};
     string pwd;
 };
 
@@ -579,8 +519,12 @@ private:
     PatientManagement patientManager;
 
 public:
-    HMS() : patientManager(bedManager, medManager) {
-        loginInfo.push_back({4040, "Admin"});
+    HMS(int defaultUserId = 4040, const string &defaultPassword = "Admin")
+        : patientManager(bedManager, medManager) {
+        UserLogin user{};
+        user.uID = defaultUserId;
+        user.pwd = defaultPassword;
+        loginInfo.push_back(user);
     }
 
     void menu() {
