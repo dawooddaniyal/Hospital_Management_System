@@ -34,7 +34,7 @@ struct PatientInfo {
     string name;
     string disease;
     string dateAdmit;
-    long long cnic;
+    int cnic;
 
 };
 
@@ -53,6 +53,7 @@ public:
             bed.bedCharges = defaultCharge;
             beds.push_back(bed);
         }
+        cout<<"BedManagement Constructor Called"<<endl;
     }
 
     bool assignBed(int patientId) {
@@ -76,12 +77,11 @@ public:
                 bed.reserved = false;
                 bed.pBed = 0;
                 cout << "Bed " << bed.bId << " released." << endl;
-                return;
             }
         }
     }
 
-    int currentBedCharges() const {
+    int currentBedCharges(){
         if (beds.empty()) {
             return 0;
         }
@@ -90,7 +90,7 @@ public:
 
     void set() {
         int choice = 0;
-        cout << "Enter 1 to add beds or 2 to update bed charges: ";
+        cout << "Enter 1 to add beds or\n2 to update bed charges: ";
         cin >> choice;
 
         if (choice == 1) {
@@ -106,7 +106,8 @@ public:
                 beds.push_back({start + i, 0, false, currentBedCharges()});
             }
             cout << "Total beds: " << beds.size() << endl;
-        } else if (choice == 2) {
+        } 
+		else if (choice == 2) {
             int newCharge = 0;
             cout << "Enter new bed charge: ";
             cin >> newCharge;
@@ -118,27 +119,31 @@ public:
                 beds[i].bedCharges = newCharge;
             }
             cout << "Updated bed charges to " << newCharge << endl;
-        } else {
+        } 
+		else {
             cout << "Invalid choice." << endl;
         }
     }
 
-    void get() const {
+    void get(){
         int choice = 0;
-        cout << "Enter 0 for free beds, 1 for reserved beds, 2 for total beds: ";
+        cout << "Enter 0 for free beds:\n1 for reserved beds:\n2 for total beds: ";
         cin >> choice;
-
         switch (choice) {
             case 0:
                 for (int i = 0; i < (int)beds.size(); i++) {
-                    const Bed &bed = beds[i];
-                    if (!bed.reserved) cout << "Bed " << bed.bId << " is available." << endl;
+                    Bed &bed = beds[i];
+                    if (!bed.reserved){
+						cout << "Bed " << bed.bId << " is available." << endl;
+					}
                 }
                 break;
             case 1:
                 for (int i = 0; i < (int)beds.size(); i++) {
                     const Bed &bed = beds[i];
-                    if (bed.reserved) cout << "Bed " << bed.bId << " is reserved by patient #" << bed.pBed << "." << endl;
+                    if (bed.reserved){
+						cout << "Bed " << bed.bId << " is reserved by patient #" << bed.pBed << "." << endl;
+					}
                 }
                 break;
             case 2:
@@ -162,7 +167,9 @@ public:
             return;
         }
         beds.erase(beds.begin() + id);
-        for (int i = 0; i < (int)beds.size(); ++i) beds[i].bId = i;
+        for (int i = 0; i < (int)beds.size(); ++i) {
+        	beds[i].bId = i;
+		}
         cout << "Bed removed." << endl;
     }
 
@@ -178,11 +185,19 @@ public:
             cout << "Choice: ";
             cin >> choice;
             switch (choice) {
-                case 1: set(); break;
-                case 2: get(); break;
-                case 3: removeBed(); break;
-                case 4: break;
-                default: cout << "Invalid choice." << endl;
+                case 1: 
+					set(); 
+					break;
+                case 2:
+					get(); 
+					break;
+                case 3: 
+					removeBed();
+					break;
+                case 4: 
+					break;
+                default: 
+					cout << "Invalid choice." << endl;
             }
         }
     }
@@ -197,6 +212,7 @@ public:
         if (reserveCount > 0) {
             medics.reserve(reserveCount);
         }
+        cout<<"MedManagement Constructor Called"<<endl;
     }
 
     void set() {
@@ -207,14 +223,14 @@ public:
             m.name = "";
             m.type = "";
             m.stock = 0;
-            m.pricePerItem = 0.0F;
+            m.pricePerItem = 0.0;
             cout << "Enter medicine type: ";
             cin >> m.type;
             cout << "Enter medicine name: ";
             cin >> m.name;
             cout << "Enter price per item: ";
             cin >> m.pricePerItem;
-            if (m.pricePerItem < 0) {
+            if (m.pricePerItem < 0){
                 cout << "Price cannot be negative." << endl;
                 continue;
             }
@@ -231,13 +247,13 @@ public:
         }
     }
 
-    void get() const {
+    void get(){
         if (medics.empty()) {
             cout << "No medicines available." << endl;
             return;
         }
         for (int i = 0; i < (int)medics.size(); i++) {
-            const Medicine &m = medics[i];
+            Medicine &m = medics[i];
             cout << "ID: " << m.mID << ", Name: " << m.name << ", Type: " << m.type
                  << ", Stock: " << m.stock << ", Price: " << m.pricePerItem << endl;
         }
@@ -252,7 +268,9 @@ public:
             return;
         }
         medics.erase(medics.begin() + id);
-        for (int i = 0; i < (int)medics.size(); ++i) medics[i].mID = i;
+        for (int i = 0; i < (int)medics.size(); ++i){
+			medics[i].mID = i;
+		}
         cout << "Medicine removed." << endl;
     }
 
@@ -274,9 +292,13 @@ public:
         cout << "New stock for " << medics[id].name << ": " << medics[id].stock << endl;
     }
 
-    bool consumeMedicine(int id, int qty, Medication &out) {
-        if (id < 0 || id >= (int)medics.size()) return false;
-        if (qty <= 0 || medics[id].stock < qty) return false;
+    bool consumeMedicine(int id, int qty, Medication out){
+        if (id < 0 || id >= (int)medics.size()){
+			return false;
+		}
+        if (qty <= 0 || medics[id].stock < qty){
+			return false;
+		}
 
         medics[id].stock -= qty;
         out.medicineId = medics[id].mID;
@@ -300,12 +322,22 @@ public:
             cout << "Choice: ";
             cin >> choice;
             switch (choice) {
-                case 1: set(); break;
-                case 2: get(); break;
-                case 3: removeItem(); break;
-                case 4: updateStock(); break;
-                case 5: break;
-                default: cout << "Invalid choice." << endl;
+                case 1: 
+					set(); 
+					break;
+                case 2: 
+					get(); 
+					break;
+                case 3: 
+					removeItem(); 
+					break;
+                case 4: 
+					updateStock(); 
+					break;
+                case 5: 
+					break;
+                default: 
+					cout << "Invalid choice." << endl;
             }
         }
     }
@@ -318,18 +350,24 @@ private:
     vector<Medication> meds;
 
 public:
-    Patient(long long presetCnic = 0, const string &presetName = "", const string &presetDisease = "",
-            const string &presetDate = "") {
+    Patient(int presetCnic = 0,string presetName = "",string presetDisease = "",string presetDate = "") {
         info.pID = ++nextId;
         info.cnic = presetCnic;
         info.name = presetName;
         info.disease = presetDisease;
         info.dateAdmit = presetDate;
+        cout<<"Patient Constructor Called"<<endl;
     }
 
-    int id() const { return info.pID; }
-    long long cnic() const { return info.cnic; }
-    void setCnic(long long value) { info.cnic = value; }
+    int id(){
+		return info.pID; 
+	}
+    int cnic(){
+		return info.cnic; 
+	}
+    void setCnic(int value){ 
+		info.cnic = value; 
+	}
 
     void set() {
         cout << "Enter patient name: ";
@@ -345,7 +383,7 @@ public:
         cout << "Assigned patient ID: " << info.pID << endl;
     }
 
-    void patientHistory() const {
+    void patientHistory(){
         cout << "Patient ID: " << info.pID << endl;
         cout << "Name: " << info.name << endl;
         cout << "CNIC: " << info.cnic << endl;
@@ -353,7 +391,7 @@ public:
         cout << "Admit Date: " << info.dateAdmit << endl;
     }
 
-    void addMedication(MedManagement &medManager) {
+    void addMedication(MedManagement medManager) {
         int medId = 0, qty = 0;
         cout << "Enter medicine ID: ";
         cin >> medId;
@@ -369,7 +407,7 @@ public:
         }
     }
 
-    void displayMedication() const {
+    void displayMedication(){
         if (meds.empty()) {
             cout << "No medications given." << endl;
             return;
@@ -381,7 +419,7 @@ public:
         }
     }
 
-    void generateBill(int bedChargePerDay) const {
+    void generateBill(int bedChargePerDay){
         int days = 0;
         cout << "Enter number of days stayed: ";
         cin >> days;
@@ -390,9 +428,9 @@ public:
             return;
         }
 
-        float medCharges = 0.0F;
+        float medCharges = 0.0;
         for (int i = 0; i < (int)meds.size(); i++) {
-            medCharges += meds[i].price * meds[i].quantity;
+            medCharges += (meds[i].price) * (meds[i].quantity);
         }
         float bedCharges = (float)(bedChargePerDay * days);
         float total = medCharges + bedCharges;
@@ -410,22 +448,25 @@ int Patient::nextId = 0;
 class PatientManagement {
 private:
     vector<Patient> patients;
-    BedManagement &bedManager;
-    MedManagement &medManager;
+    BedManagement bedManager;
+    MedManagement medManager;
 
-    int findIndexByCnic(long long cnic) const {
+    int findIndexByCnic(int cnic){
         for (int i = 0; i < (int)patients.size(); ++i) {
-            if (patients[i].cnic() == cnic) return i;
+            if (patients[i].cnic() == cnic){
+				return i;
+			}
         }
         return -1;
     }
 
 public:
-    PatientManagement(BedManagement &b, MedManagement &m)
-        : bedManager(b), medManager(m) {}
+    PatientManagement(BedManagement b, MedManagement m):bedManager(b), medManager(m){
+    	cout<<"PatientManagement Constructor Called"<<endl;
+	}
 
     void addPatient() {
-        long long cnic = 0;
+        int cnic = 0;
         cout << "Enter patient CNIC: ";
         cin >> cnic;
         if (findIndexByCnic(cnic) != -1) {
@@ -445,7 +486,7 @@ public:
     }
 
     void removePatient() {
-        long long cnic = 0;
+        int cnic = 0;
         cout << "Enter patient CNIC to remove: ";
         cin >> cnic;
         int idx = findIndexByCnic(cnic);
@@ -460,7 +501,7 @@ public:
     }
 
     void managePatient() {
-        long long cnic = 0;
+        int cnic = 0;
         cout << "Enter patient CNIC: ";
         cin >> cnic;
         int idx = findIndexByCnic(cnic);
@@ -481,11 +522,20 @@ public:
             cout << "Choice: ";
             cin >> choice;
             switch (choice) {
-                case 1: patients[idx].patientHistory(); break;
-                case 2: patients[idx].addMedication(medManager); break;
-                case 3: patients[idx].displayMedication(); break;
-                case 4: patients[idx].generateBill(bedManager.currentBedCharges()); break;
-                case 5: break;
+                case 1: 
+					patients[idx].patientHistory(); 
+					break;
+                case 2: 
+					patients[idx].addMedication(medManager); 
+					break;
+                case 3: 
+					patients[idx].displayMedication(); 
+					break;
+                case 4: 
+					patients[idx].generateBill(bedManager.currentBedCharges()); 
+					break;
+                case 5: 
+					break;
                 default: cout << "Invalid choice." << endl;
             }
         }
@@ -520,22 +570,43 @@ struct UserLogin {
 
 class HMS {
 private:
-    vector<UserLogin> loginInfo;
+    UserLogin user;
     BedManagement bedManager;
     MedManagement medManager;
     PatientManagement patientManager;
 
 public:
-    HMS(int defaultUserId = 4040, const string &defaultPassword = "Admin")
-        : patientManager(bedManager, medManager) {
-        UserLogin user;
+    HMS(int defaultUserId = 4040,string defaultPassword = "Admin"):patientManager(bedManager, medManager) {
         user.uID = defaultUserId;
         user.pwd = defaultPassword;
-        loginInfo.push_back(user);
+        cout<<"HMS Constructor Called"<<endl;
     }
+    
+    bool Login(){
+    	int tries = 3;
+    	string uInputPwd = " ";
+    	int uInputId = 0;
+    	while(tries>0){
+    		cout<<"Available Tries: "<<tries<<endl;
+    		cout<<"Enter ID: ";
+    		cin>>uInputId;
+    		cout<<"Enter Password: ";
+    		cin>>uInputPwd;
+    		if(uInputId == user.uID && uInputPwd == user.pwd){
+    			return true;
+			}
+			--tries;
+		}
+		return false;
+	}
 
     void menu() {
         int choice = 0;
+        if(!Login()){
+        	cout<<endl;
+        	cout<<"Too many Wrong Attempts"<<endl<<"Please try again after some time"<<endl;
+        	return;
+		}
         while (choice != 4) {
             cout << endl;
             cout << "Welcome to Hospital Management System" << endl;
@@ -546,11 +617,20 @@ public:
             cout << "Choice: ";
             cin >> choice;
             switch (choice) {
-                case 1: patientManager.patientManagementMenu(); break;
-                case 2: medManager.medicineMenu(); break;
-                case 3: bedManager.bedMenu(); break;
-                case 4: cout << "Goodbye." << endl; break;
-                default: cout << "Invalid choice." << endl;
+                case 1: 
+					patientManager.patientManagementMenu(); 
+					break;
+                case 2: 
+					medManager.medicineMenu(); 
+					break;
+                case 3: 
+					bedManager.bedMenu(); 
+					break;
+                case 4: 
+					cout << "Goodbye." << endl; 
+					break;
+                default: 
+					cout << "Invalid choice." << endl;
             }
         }
     }
