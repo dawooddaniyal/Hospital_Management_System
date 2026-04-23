@@ -371,7 +371,7 @@ public:
 
     void set() {
         cout << "Enter patient name: ";
-        cin >> info.name;
+        getline(cin >> ws, info.name);
         if (info.cnic == 0) {
             cout << "Enter patient CNIC: ";
             cin >> info.cnic;
