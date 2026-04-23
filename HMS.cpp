@@ -186,18 +186,18 @@ public:
             cin >> choice;
             switch (choice) {
                 case 1: 
-					set(); 
-					break;
+					        set(); 
+					        break;
                 case 2:
-					get(); 
-					break;
+				        	get(); 
+					        break;
                 case 3: 
-					removeBed();
-					break;
+		        			removeBed();
+				        	break;
                 case 4: 
-					break;
+				        	break;
                 default: 
-					cout << "Invalid choice." << endl;
+				         	cout << "Invalid choice." << endl;
             }
         }
     }
@@ -223,14 +223,14 @@ public:
             m.name = "";
             m.type = "";
             m.stock = 0;
-            m.pricePerItem = 0.0;
+            m.pricePerItem = 0.0F;
             cout << "Enter medicine type: ";
-            cin >> m.type;
+            getline(cin >> ws, m.type);
             cout << "Enter medicine name: ";
-            cin >> m.name;
+            getline(cin >> ws, m.name);
             cout << "Enter price per item: ";
             cin >> m.pricePerItem;
-            if (m.pricePerItem < 0){
+            if (m.pricePerItem < 0) {
                 cout << "Price cannot be negative." << endl;
                 continue;
             }
@@ -253,7 +253,7 @@ public:
             return;
         }
         for (int i = 0; i < (int)medics.size(); i++) {
-            Medicine &m = medics[i];
+            Medicine m = medics[i];
             cout << "ID: " << m.mID << ", Name: " << m.name << ", Type: " << m.type
                  << ", Stock: " << m.stock << ", Price: " << m.pricePerItem << endl;
         }
@@ -377,9 +377,9 @@ public:
             cin >> info.cnic;
         }
         cout << "Enter disease: ";
-        cin >> info.disease;
+        getline(cin >> ws, info.disease);
         cout << "Enter admit date (yyyy/mm/dd): ";
-        cin >> info.dateAdmit;
+        getline(cin >> ws, info.dateAdmit);
         cout << "Assigned patient ID: " << info.pID << endl;
     }
 
