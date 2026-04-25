@@ -1,7 +1,4 @@
-/*
- * Hospital Management System — HMS.cpp
- * All original bugs fixed + logic improvements applied.
- */
+
 
 #include <iostream>
 #include <conio.h>
@@ -12,15 +9,11 @@
 
 using namespace std;
 
-// ─────────────────────────────────────────────
-//  STRUCTS
-// ─────────────────────────────────────────────
-
 struct Bed {
     int    bId;
     int    pBed;
     bool   reserved;
-    double bedCharges;   // L8: was int — unified to double for consistent money arithmetic
+    double bedCharges;   
 };
 
 struct Medicine {
@@ -28,7 +21,7 @@ struct Medicine {
     string name;
     string type;
     int    stock;
-    double pricePerItem; // L8: was float — unified to double
+    double pricePerItem; 
 };
 
 struct Medication {
@@ -36,25 +29,20 @@ struct Medication {
     string name;
     string type;
     int    quantity;
-    double price;        // L8: was float — unified to double
+    double price;        
 };
 
 struct PatientInfo {
     int       pID;
     string    name;
     string    disease;
-    // L4: removed dead string dateAdmit — actual admit time stored as time_t in Patient
-    long long cnic;     // B4: was int — long long handles 13-digit Pakistani CNICs
+    
+    long long cnic;     
 };
-
-// ─────────────────────────────────────────────
-//  BedManagement
-// ─────────────────────────────────────────────
 
 class BedManagement {
 private:
     vector<Bed> beds;
-
 public:
     BedManagement(int initialBedCount = 10, double defaultCharge = 1000.0) {
         beds.reserve(initialBedCount);
@@ -69,7 +57,7 @@ public:
         cout << "BedManagement Constructor Called" << endl;
     }
 
-    // L2: returns the assigned bed's charge rate so Patient can snapshot it at admit time
+    
     bool assignBed(int patientId, double &assignedCharge) {
         for (int i = 0; i < (int)beds.size(); i++) {
             Bed &bed = beds[i];
@@ -92,7 +80,7 @@ public:
                 bed.reserved = false;
                 bed.pBed     = 0;
                 cout << "Bed " << bed.bId << " released." << endl;
-                return; // B7: early return — one patient occupies one bed
+                return; 
             }
         }
     }
@@ -104,7 +92,10 @@ public:
 
     void set() {
         int choice = 0;
-        cout << "Enter 1 to add beds or 2 to update bed charges: ";
+        cout << "\n[Bed Setup]\n"
+                "Enter 1 to add new beds.\n"
+                "Enter 2 to update per-day bed charges for all beds.\n"
+                "Choice: ";
         cin >> choice;
         if (choice == 1) {
             int toAdd = 0;
@@ -129,7 +120,11 @@ public:
 
     void get() {
         int choice = 0;
-        cout << "Enter 0=free beds, 1=reserved beds, 2=total beds\nChoice: ";
+        cout << "\n[Bed View]\n"
+                "Enter 0 to list free beds.\n"
+                "Enter 1 to list reserved beds.\n"
+                "Enter 2 to show total bed count.\n"
+                "Choice: ";
         cin >> choice;
         switch (choice) {
             case 0:
@@ -154,7 +149,7 @@ public:
         int id = 0;
         cout << "Enter bed ID to remove: ";
         cin >> id;
-        // B8: search by bId value, not raw vector index
+        
         int foundIdx = -1;
         for (int i = 0; i < (int)beds.size(); ++i)
             if (beds[i].bId == id) { foundIdx = i; break; }
@@ -181,15 +176,10 @@ public:
     }
 };
 
-// ─────────────────────────────────────────────
-//  MedManagement
-// ─────────────────────────────────────────────
-
 class MedManagement {
 private:
     vector<Medicine> medics;
-
-    // L5: find index by mID value — not raw vector index
+    
     int findIndexById(int mID) {
         for (int i = 0; i < (int)medics.size(); ++i)
             if (medics[i].mID == mID) return i;
@@ -204,6 +194,7 @@ public:
 
     void set() {
         char more = 'y';
+        cout << "\n[Medicine Entry]\nYou can add one or more medicines.\n";
         while (more == 'y' || more == 'Y') {
             Medicine m;
             m.mID          = (int)medics.size();
@@ -240,7 +231,7 @@ public:
         int id = 0;
         cout << "Enter medicine ID to remove: ";
         cin >> id;
-        // L5: search by mID value — mirrors removeBed fix
+        
         int idx = findIndexById(id);
         if (idx == -1) { cout << "Invalid ID." << endl; return; }
         medics.erase(medics.begin() + idx);
@@ -250,9 +241,10 @@ public:
 
     void updateStock() {
         int id = 0, add = 0;
+        cout << "\n[Medicine Stock Update]\n";
         cout << "Enter medicine ID: ";
         cin >> id;
-        // L5: search by mID value
+        
         int idx = findIndexById(id);
         if (idx == -1) { cout << "Invalid ID." << endl; return; }
         cout << "Enter stock to add: ";
@@ -262,9 +254,9 @@ public:
         cout << "New stock for " << medics[idx].name << ": " << medics[idx].stock << endl;
     }
 
-    // B1: Medication &out — pass by reference so caller receives filled data
+    
     bool consumeMedicine(int id, int qty, Medication &out) {
-        int idx = findIndexById(id); // L5: lookup by mID value
+        int idx = findIndexById(id); 
         if (idx == -1) return false;
         if (qty <= 0 || medics[idx].stock < qty) return false;
         medics[idx].stock -= qty;
@@ -294,20 +286,16 @@ public:
     }
 };
 
-// ─────────────────────────────────────────────
-//  Patient
-// ─────────────────────────────────────────────
-
 class Patient {
 private:
     static int        nextId;
     PatientInfo       info;
-    bool              isAdmitted;      // L4/B-improve: explicit bool, not admitTime==0
-    bool              isDischarged;    // locks record after discharge
+    bool              isAdmitted;      
+    bool              isDischarged;    
     time_t            admitTime;
     time_t            dischargeTime;
     struct tm         dateTime;
-    double            admitBedCharge;  // L2: charge rate snapshotted at admit time
+    double            admitBedCharge;  
     vector<Medication> meds;
 
 public:
@@ -320,26 +308,26 @@ public:
         isDischarged   = false;
         admitTime      = 0;
         dischargeTime  = 0;
-        admitBedCharge = 0.0;          // L2: initialise snapshot
+        admitBedCharge = 0.0;          
         memset(&dateTime, 0, sizeof(dateTime));
         cout << "Patient Constructor Called" << endl;
     }
 
-    int       id()              { return info.pID;     }
-    long long getCnic()         { return info.cnic;    } // B10: renamed from cnic()
-    bool      getIsDischarged() { return isDischarged; }
+    int       id() const              { return info.pID;     }
+    long long getCnic() const         { return info.cnic;    } 
+    bool      getIsDischarged() const { return isDischarged; }
 
     void setCnic(long long value) { info.cnic = value; }
 
-    // L2: accepts bed charge snapshotted at assignment — stored for billing
+    
     void markAdmitted(double bedCharge) {
         if (!isAdmitted) {
             admitTime      = time(nullptr);
             dateTime       = *localtime(&admitTime);
             mktime(&dateTime);
             isAdmitted     = true;
-            admitBedCharge = bedCharge; // L2: snapshot rate
-            info.pID       = ++nextId;  // B6: ID assigned only after bed confirmed
+            admitBedCharge = bedCharge; 
+            info.pID       = ++nextId;  
             cout << "Patient admitted. ID: " << info.pID << endl;
         }
     }
@@ -361,7 +349,7 @@ public:
         }
         cout << "Enter disease: ";
         getline(cin >> ws, info.disease);
-        // markAdmitted() is called by addPatient() AFTER bed is confirmed — not here
+        
     }
 
     void patientHistory() {
@@ -370,7 +358,7 @@ public:
         cout << "CNIC:           " << info.cnic    << endl;
         cout << "Disease:        " << info.disease  << endl;
         cout << "Bed Charge/Day: " << admitBedCharge << endl;
-        cout << "Admit Date:     " << asctime(&dateTime); // B12: asctime appends \n — no endl
+        cout << "Admit Date:     " << asctime(&dateTime); 
         if (isDischarged) {
             struct tm dischargeTm = *localtime(&dischargeTime);
             cout << "Discharge Date: " << asctime(&dischargeTm);
@@ -379,7 +367,7 @@ public:
         }
     }
 
-    // B2: MedManagement passed by reference — stock deductions are real
+    
     void addMedication(MedManagement &medManager) {
         if (isDischarged) {
             cout << "Cannot add medication — patient already discharged." << endl;
@@ -396,6 +384,7 @@ public:
             cout << "Medication added." << endl;
         } else {
             cout << "Unable to add medication (invalid ID or insufficient stock)." << endl;
+            return;
         }
     }
 
@@ -408,13 +397,13 @@ public:
         }
     }
 
-    // L1: correct operator precedence (divide then cast)
-    // L2: uses snapshotted admitBedCharge — not live rate from bedManager
-    // L3: uses dischargeTime if available, else time(now)
+    
+    
+    
     void generateBill() {
         if (!isAdmitted) { cout << "Patient has no admit record." << endl; return; }
         time_t endTime = (dischargeTime != 0) ? dischargeTime : time(nullptr);
-        int days = (int)(difftime(endTime, admitTime) / 86400); // L1: fixed precedence
+        int days = (int)(difftime(endTime, admitTime) / 86400); 
         if (days < 1) days = 1;
         cout << "Days stayed: " << days << endl;
 
@@ -422,34 +411,30 @@ public:
         for (int i = 0; i < (int)meds.size(); i++)
             medCharges += meds[i].price * (double)meds[i].quantity;
 
-        double bedCharges = admitBedCharge * (double)days; // L2: snapshotted rate
+        double bedCharges = admitBedCharge * (double)days; 
         double total      = medCharges + bedCharges;
         cout << "\n--- Bill Summary ---" << endl;
         cout << "Medication Charges: " << medCharges << endl;
         cout << "Bed Charges:        " << bedCharges << endl;
         cout << "Total:              " << total       << endl;
     }
+
 };
 
 int Patient::nextId = 0;
 
-// ─────────────────────────────────────────────
-//  PatientManagement
-// ─────────────────────────────────────────────
-
 class PatientManagement {
 private:
     vector<Patient>   patients;
-    BedManagement    &bedManager;  // B3: reference — no disconnected copy
-    MedManagement    &medManager;  // B3: reference — no disconnected copy
-
+    BedManagement    &bedManager;  
+    MedManagement    &medManager;  
     int findIndexByCnic(long long cnic) {
         for (int i = 0; i < (int)patients.size(); ++i)
             if (patients[i].getCnic() == cnic) return i;
         return -1;
     }
 
-    // L9: pointer-based re-lookup to prevent stale index across operations
+    
     Patient* findByCnic(long long cnic) {
         for (int i = 0; i < (int)patients.size(); ++i)
             if (patients[i].getCnic() == cnic) return &patients[i];
@@ -462,7 +447,8 @@ public:
     }
 
     void addPatient() {
-        long long cnic = 0;  // B4: long long
+        long long cnic = 0;  
+        cout << "\n[New Patient Admission]\nFollow the prompts to admit a patient.\n";
         cout << "Enter patient CNIC: ";
         cin >> cnic;
         if (findIndexByCnic(cnic) != -1) {
@@ -472,25 +458,25 @@ public:
 
         Patient p;
         p.setCnic(cnic);
-        p.set(); // collects name/disease — does NOT call markAdmitted yet
+        p.set(); 
 
-        // L1 (addPatient): check bed availability BEFORE pushing to vector
-        //    so a failed assignment never creates a ghost reservation or wastes an ID
-        // Use a temporary sentinel ID=0 to probe availability, then assign real ID after
+        
+        
+        
         double assignedCharge = 0.0;
-        // Probe bed availability without consuming it permanently
-        // We call assignBed with a temp ID, confirm success, then re-assign with real ID
+        
+        
         if (!bedManager.assignBed(0, assignedCharge)) {
             cout << "No bed available. Patient not admitted." << endl;
             return;
         }
-        // Release the temporary probe assignment
+        
         bedManager.resignBed(0);
 
-        // Now markAdmitted — this sets the real patient ID
-        p.markAdmitted(assignedCharge); // B6 + L2: ID set here, charge snapshotted
+        
+        p.markAdmitted(assignedCharge); 
 
-        // Assign bed with the real patient ID
+        
         double dummy = 0.0;
         bedManager.assignBed(p.id(), dummy);
 
@@ -500,25 +486,27 @@ public:
 
     void dischargePatient() {
         long long cnic = 0;
+        cout << "\n[Patient Discharge]\nFollow the prompts to discharge a patient.\n";
         cout << "Enter patient CNIC to discharge: ";
         cin >> cnic;
-        // L9: pointer-based lookup
+        
         Patient *p = findByCnic(cnic);
         if (!p) { cout << "Patient not found." << endl; return; }
         if (p->getIsDischarged()) { cout << "Patient already discharged." << endl; return; }
 
-        // L3 (discharge): bed charge already snapshotted on Patient at admit time
-        //    so we can safely release the bed BEFORE generating the bill
+        
+        
         bedManager.resignBed(p->id());
         p->markDischarged();
 
         cout << "\n--- Final Bill ---" << endl;
-        p->generateBill(); // L2: uses snapshotted charge; L3: uses dischargeTime
+        p->generateBill(); 
         cout << "Patient discharged. Record retained for reference." << endl;
     }
 
     void removePatient() {
         long long cnic = 0;
+        cout << "\n[Remove Patient Record]\n";
         cout << "Enter patient CNIC to remove record: ";
         cin >> cnic;
         int idx = findIndexByCnic(cnic);
@@ -535,13 +523,14 @@ public:
 
     void managePatient() {
         long long cnic = 0;
+        cout << "\n[Manage Existing Patient]\n";
         cout << "Enter patient CNIC: ";
         cin >> cnic;
         if (!findByCnic(cnic)) { cout << "Patient not found." << endl; return; }
 
         int choice = 0;
         while (choice != 5) {
-            // L9: fresh pointer each loop iteration — stale index impossible
+            
             Patient *p = findByCnic(cnic);
             if (!p) { cout << "Patient record no longer exists." << endl; return; }
             cout << "\n[Patient Menu]\n1. Show history\n2. Add medication\n"
@@ -576,10 +565,6 @@ public:
     }
 };
 
-// ─────────────────────────────────────────────
-//  HMS
-// ─────────────────────────────────────────────
-
 struct UserLogin {
     int    uID;
     string pwd;
@@ -590,11 +575,12 @@ private:
     UserLogin         user;
     BedManagement     bedManager;
     MedManagement     medManager;
-    PatientManagement patientManager; // B3: refs into bedManager & medManager — shared state
+    PatientManagement patientManager; 
 
 	string getPassword(){
 		string pwd = "";
 		int ch;
+		cout << "(Password will be hidden as * while typing)" << endl;
 		while(true){
 			ch = _getch();
 			if(ch == '\r' || ch == '\n'){
@@ -619,35 +605,40 @@ private:
 	}
 public:
     HMS(int defaultUserId = 4040, string defaultPassword = "Admin")
-        : patientManager(bedManager, medManager) // B3: passes refs to own members
+        : patientManager(bedManager, medManager) 
     {
         user.uID = defaultUserId;
         user.pwd = defaultPassword;
         cout << "HMS Constructor Called" << endl;
     }
 
-    // L6: session lockout — program must be restarted after 3 failed attempts
+    
     bool Login() {
         int    tries      = 3;
-        string uInputPwd  = ""; // B9: was " " (space)
+        string uInputPwd  = ""; 
         int    uInputId   = 0;
+        cout << "\n=== HMS Login ===" << endl;
+        cout << "Use your assigned ID and password to continue." << endl;
         while (tries > 0) {
             cout << "Attempts remaining: " << tries << endl;
             cout << "Enter ID: ";
             cin >> uInputId;
             cout << "Enter Password: ";
             uInputPwd = getPassword();
-            if (uInputId == user.uID && uInputPwd == user.pwd) return true;
+            if (uInputId == user.uID && uInputPwd == user.pwd) {
+                cout << "Login successful." << endl;
+                }
             --tries;
             if (tries > 0) cout << "Incorrect. Try again." << endl;
         }
         cout << "Session locked after too many failed attempts." << endl;
-        return false; // L6: caller (menu) returns — program exits session
+        return false; 
     }
 
     void menu() {
         if (!Login()) return;
         int choice = 0;
+        cout << "\nSystem ready. Choose a module from the main menu." << endl;
         while (choice != 4) {
             cout << "\nWelcome to Hospital Management System\n"
                     "1. Patient Management\n2. Medicine Management\n"
@@ -663,10 +654,6 @@ public:
         }
     }
 };
-
-// ─────────────────────────────────────────────
-//  main
-// ─────────────────────────────────────────────
 
 int main() {
     HMS obj;
