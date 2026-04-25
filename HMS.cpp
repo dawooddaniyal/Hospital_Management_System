@@ -4,6 +4,7 @@
  */
 
 #include <iostream>
+#include <conio.h>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -591,6 +592,31 @@ private:
     MedManagement     medManager;
     PatientManagement patientManager; // B3: refs into bedManager & medManager — shared state
 
+	string getPassword(){
+		string pwd = "";
+		int ch;
+		while(true){
+			ch = _getch();
+			if(ch == '\r' || ch == '\n'){
+				break;
+			}
+			else if(ch == 0 || ch == 224){
+				_getch();
+			}
+			else if(ch == 8 || ch == 127){
+				if(!pwd.empty()){
+					pwd.pop_back();
+					cout<<"\b \b"<<flush;
+				}
+			}
+			else if(ch >= 32 && ch < 127){
+				pwd += ch;
+				cout<<"*"<<flush;
+			}
+		}
+		cout<<endl;
+		return pwd;
+	}
 public:
     HMS(int defaultUserId = 4040, string defaultPassword = "Admin")
         : patientManager(bedManager, medManager) // B3: passes refs to own members
@@ -610,7 +636,7 @@ public:
             cout << "Enter ID: ";
             cin >> uInputId;
             cout << "Enter Password: ";
-            cin >> uInputPwd;
+            uInputPwd = getPassword();
             if (uInputId == user.uID && uInputPwd == user.pwd) return true;
             --tries;
             if (tries > 0) cout << "Incorrect. Try again." << endl;
