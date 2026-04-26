@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <conio.h>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -43,6 +45,17 @@ struct PatientInfo {
 class BedManagement {
 private:
     vector<Bed> beds;
+    void saveToFile(){
+    	ofstream file("beds.txt");
+    	if(!file.is_open()){
+    		cout<<"Error: could not open from beds.txt for writing."<<endl;
+    		return;
+		}
+		for(int i = 0;i < (int)beds.size();i++){
+			file<<beds[i].bId<<"|"<<beds[i].pBed<<"|"<<beds[i].reserved<<"|"<<beds[i].bedCharges<<"\n";
+		}
+		file.close();
+	}
 public:
     BedManagement(int initialBedCount = 10, double defaultCharge = 1000.0) {
         beds.reserve(initialBedCount);
@@ -56,7 +69,35 @@ public:
         }
         cout << "BedManagement Constructor Called" << endl;
     }
-
+	
+	void loadFromFile(){
+		ifstream file("beds.txt");
+		if(!file.is_open()){
+			cout<<"No beds file found. Starting fresh"<<endl;
+			return;
+		}
+		beds.clear();
+		string line;
+		while(getline(file,line)){
+			if(line.empty()){
+				continue;
+			}
+			stringstream ss(line);
+			string token;
+			Bed bed;
+			getline(ss,token,'|');
+			bed.bId = stoi(token);
+			getline(ss,token,'|');
+			bed.pBed = stoi(token);
+			getline(ss,token,'|');
+			bed.reserved = stoi(token);
+			getline(ss,token,'|');
+			bed.bedCharges = stod(token);
+			beds.push_back(bed);
+		}
+		file.close();
+		cout<<"Beds Loaded"<<beds.size()<<endl;
+	}
     
     bool assignBed(int patientId, double &assignedCharge) {
         for (int i = 0; i < (int)beds.size(); i++) {
@@ -66,6 +107,7 @@ public:
                 bed.pBed       = patientId;
                 assignedCharge = bed.bedCharges;
                 cout << "Bed " << bed.bId << " assigned to patient #" << patientId << endl;
+                saveToFile();
                 return true;
             }
         }
@@ -80,6 +122,7 @@ public:
                 bed.reserved = false;
                 bed.pBed     = 0;
                 cout << "Bed " << bed.bId << " released." << endl;
+                saveToFile();
                 return; 
             }
         }
@@ -106,6 +149,7 @@ public:
             for (int i = 0; i < toAdd; ++i)
                 beds.push_back({start + i, 0, false, currentBedCharges()});
             cout << "Total beds: " << beds.size() << endl;
+            saveToFile();
         } else if (choice == 2) {
             double newCharge = 0.0;
             cout << "Enter new bed charge: ";
@@ -113,6 +157,7 @@ public:
             if (newCharge < 0) { cout << "Bed charge cannot be negative." << endl; return; }
             for (int i = 0; i < (int)beds.size(); i++) beds[i].bedCharges = newCharge;
             cout << "Updated bed charges to " << newCharge << endl;
+            saveToFile();
         } else {
             cout << "Invalid choice." << endl;
         }
@@ -158,6 +203,7 @@ public:
         beds.erase(beds.begin() + foundIdx);
         for (int i = 0; i < (int)beds.size(); ++i) beds[i].bId = i;
         cout << "Bed removed." << endl;
+        saveToFile();
     }
 
     void bedMenu() {
@@ -185,12 +231,53 @@ private:
             if (medics[i].mID == mID) return i;
         return -1;
     }
-
+	void saveToFile(){
+		ofstream file("medicines.txt");
+		if(!file.is_open()){
+			cout<<"Error: could not open medicines.txt for writing."<<endl;
+			return;
+		}
+		for(int i = 0; i < (int)medics.size();i++){
+			file<<medics[i].mID<<"|"<<medics[i].name<<"|"<<medics[i].type<<"|"<<medics[i].stock<<"|"<<medics[i].pricePerItem<<"\n";
+		}
+		file.close();
+	}
 public:
     MedManagement(int reserveCount = 0) {
         if (reserveCount > 0) medics.reserve(reserveCount);
         cout << "MedManagement Constructor Called" << endl;
     }
+    
+    void loadFromFile(){
+    	ifstream file("medicines.txt");
+    	if(!file.is_open()){
+    		cout<<"No medicine file found. Starting fresh"<<endl;
+    		return;
+		}
+		medics.clear();
+		string line;
+		while(getline(file,line)){
+			if(line.empty()){
+				continue;
+			}
+			stringstream ss(line);
+			string token;
+			Medicine m;
+			getline(ss,token,'|');
+			m.mID = stoi(token);
+			getline(ss,token,'|');
+			m.name = token;
+			getline(ss,token,'|');
+			m.type = token;
+			getline(ss,token,'|');
+			m.stock = stoi(token);
+			getline(ss,token,'|');
+			m.pricePerItem = stod(token);
+			medics.push_back(m);
+		}
+		file.close();
+		cout<<"Medicines Loaded: "<<medics.size()<<endl;
+	}
 
     void set() {
         char more = 'y';
@@ -213,6 +300,7 @@ public:
             cin >> m.stock;
             if (m.stock < 0) { cout << "Stock cannot be negative." << endl; continue; }
             medics.push_back(m);
+            saveToFile();
             cout << "Add more medicines? (y/n): ";
             cin >> more;
         }
@@ -237,6 +325,7 @@ public:
         medics.erase(medics.begin() + idx);
         for (int i = 0; i < (int)medics.size(); ++i) medics[i].mID = i;
         cout << "Medicine removed." << endl;
+        saveToFile();
     }
 
     void updateStock() {
@@ -252,6 +341,7 @@ public:
         if (add < 0) { cout << "Stock increment cannot be negative." << endl; return; }
         medics[idx].stock += add;
         cout << "New stock for " << medics[idx].name << ": " << medics[idx].stock << endl;
+        saveToFile();
     }
 
     
@@ -260,6 +350,7 @@ public:
         if (idx == -1) return false;
         if (qty <= 0 || medics[idx].stock < qty) return false;
         medics[idx].stock -= qty;
+        saveToFile();
         out.medicineId = medics[idx].mID;
         out.name       = medics[idx].name;
         out.type       = medics[idx].type;
@@ -316,7 +407,32 @@ public:
     int       id() const              { return info.pID;     }
     long long getCnic() const         { return info.cnic;    } 
     bool      getIsDischarged() const { return isDischarged; }
-
+	const PatientInfo& getInfo() const { return info; }
+	bool getIsAdmitted() const { return isAdmitted; }
+	time_t getAdmitTime() const { return admitTime;}
+	time_t getDischargeTime() const { return dischargeTime;}
+	double getAdmitBedCharges() const { return admitBedCharge;}
+	const vector<Medication> &getMeds() const { return meds;}
+	static int getNextId() { return nextId;}
+	static void setNextId(int val){ nextId = val; }
+	
+	void setName(const string &val){info.name = val;}
+	void setDisease(const string &val){info.disease = val;}
+	void restoreState(int pid, bool admitted, bool discharged, time_t aTime, time_t dTime, double charge){
+		info.pID = pid;
+		isAdmitted = admitted;
+		isDischarged = discharged;
+		admitTime = aTime;
+		dischargeTime = dTime;
+		admitBedCharge = charge;
+		if(admitTime != 0){
+			dateTime = *localtime(&admitTime);
+			mktime(&dateTime);
+		}
+	}
+	void addMedicationDirect(const Medication &med){
+		meds.push_back(med);
+	}
     void setCnic(long long value) { info.cnic = value; }
 
     
@@ -428,6 +544,37 @@ private:
     vector<Patient>   patients;
     BedManagement    &bedManager;  
     MedManagement    &medManager;  
+    
+    void savePatientsToFile(){
+    	ofstream file("patients.txt");
+    	if(!file.is_open()){
+    		cout<<"Error: could not open patients.txt for writting."<<endl;
+    		return;
+		}
+		file<<Patient::getNextId()<<"\n";
+		for(int i = 0; i < patients.size(); i++){
+			const Patient &p = patients[i];
+			const PatientInfo &inf = p.getInfo();
+			file<<inf.pID<<"|"<<inf.name<<"|"<<inf.cnic<<"|"<<inf.disease<<"|"<<p.getIsAdmitted()<<"|"<<p.getIsDischarged()<<"|"<<p.getAdmitTime()<<"|"<<p.getDischargeTime()<<"|"<<p.getAdmitBedCharges()<<"\n";
+		}
+		file.close();
+	}
+	void saveMedicationsToFile(){
+		ofstream file("medications.txt");
+		if(!file.is_open()){
+			cout<<"Error: could not open medication.txt for writting."<<endl;
+			return;
+		}
+		for(int i = 0; i < (int)patients.size(); i++){
+			const Patient &p = patients[i];
+			const vector<Medication> &meds = p.getMeds();
+			for(int j = 0; j < (int)meds.size(); j++){
+				file<<p.id()<<"|"<<meds[j].medicineId<<"|"<<meds[j].name<<"|"<<meds[j].type<<"|"<<meds[j].quantity<<"|"<<meds[j].price<<"\n";
+			}
+		}
+		file.close();
+	}
+    
     int findIndexByCnic(long long cnic) {
         for (int i = 0; i < (int)patients.size(); ++i)
             if (patients[i].getCnic() == cnic) return i;
@@ -445,6 +592,91 @@ public:
     PatientManagement(BedManagement &b, MedManagement &m) : bedManager(b), medManager(m) {
         cout << "PatientManagement Constructor Called" << endl;
     }
+
+	void loadPatientsFromFile(){
+		ifstream file("patients.txt");
+		if(!file.is_open()){
+			cout<<"No patients file found. Starting fresh"<<endl;
+			return;
+		}
+		patients.clear();
+		string line;
+		if(getline(file,line)){
+			if(!line.empty()){
+				Patient::setNextId(stoi(line));
+			}
+		}
+		while(getline(file,line)){
+			if(line.empty()){
+				continue;
+			}
+			stringstream ss(line);
+			string token;
+			Patient p;
+			
+			getline(ss,token,'|');
+			int pid = stoi(token);
+			getline(ss,token,'|');
+			p.setName(token);
+			getline(ss,token,'|');
+			p.setCnic(stoll(token));
+			getline(ss,token,'|');
+			p.setDisease(token);
+			getline(ss,token,'|');
+			bool admitted = stoi(token);
+			getline(ss,token,'|');
+			bool discharged = stoi(token);
+			getline(ss,token,'|');
+			time_t aTime = (time_t)stoll(token);
+			getline(ss,token,'|');
+			time_t dTime = (time_t)stoll(token);
+			getline(ss,token,'|');
+			double charge = stod(token);
+			
+			p.restoreState(pid,admitted,discharged,aTime,dTime,charge);
+			patients.push_back(p);
+		}
+		file.close();
+		cout<<"Patients Loaded: "<<patients.size()<<endl;
+	}
+    void loadMedicationFromFile(){
+    	ifstream file("medications.txt"); 	
+    	if(!file.is_open()){
+    		cout<<"No medication file found. Starting fresh,"<<endl;
+    		return;
+		}
+		string line;
+		while(getline(file,line)){
+			if(line.empty()){
+				continue;
+			}
+			stringstream ss(line);
+			string token;
+			Medication med;
+			int pid = 0;
+			getline(ss,token,'|');
+			pid = stoi(token);
+			getline(ss,token,'|');
+			med.medicineId = stoi(token);
+			getline(ss,token,'|');
+			med.name = token;
+			getline(ss,token,'|');
+			med.type = token;
+			getline(ss,token,'|');
+			med.quantity = stoi(token);
+			getline(ss,token,'|');
+			med.price = stod(token);
+			
+			for(int i = 0; i<(int)patients.size(); i++){
+				if(patients[i].id() == pid){
+					patients[i].addMedicationDirect(med);
+					break;
+				}
+			}
+		}
+		file.close();
+		cout<<"Medications Loaded."<<endl;
+	}
 
     void addPatient() {
         long long cnic = 0;  
@@ -481,6 +713,8 @@ public:
         bedManager.assignBed(p.id(), dummy);
 
         patients.push_back(p);
+        savePatientsToFile();
+        saveMedicationsToFile();
         cout << "Patient added successfully." << endl;
     }
 
@@ -498,6 +732,7 @@ public:
         
         bedManager.resignBed(p->id());
         p->markDischarged();
+        savePatientsToFile();
 
         cout << "\n--- Final Bill ---" << endl;
         p->generateBill(); 
@@ -518,6 +753,8 @@ public:
             bedManager.resignBed(patients[idx].id());
         }
         patients.erase(patients.begin() + idx);
+        savePatientsToFile();
+        saveMedicationsToFile();
         cout << "Patient record removed." << endl;
     }
 
@@ -538,7 +775,9 @@ public:
             cin >> choice;
             switch (choice) {
                 case 1: p->patientHistory();          break;
-                case 2: p->addMedication(medManager); break;
+                case 2: p->addMedication(medManager);
+                		saveMedicationsToFile();
+						break;
                 case 3: p->displayMedication();       break;
                 case 4: p->generateBill();            break;
                 case 5:                               break;
@@ -610,7 +849,12 @@ public:
         user.uID = defaultUserId;
         user.pwd = defaultPassword;
         cout << "HMS Constructor Called" << endl;
-    }
+    	
+    	bedManager.loadFromFile();
+    	medManager.loadFromFile();
+    	patientManager.loadPatientsFromFile();
+    	patientManager.loadMedicationFromFile();
+	}
 
     
     bool Login() {
@@ -627,6 +871,7 @@ public:
             uInputPwd = getPassword();
             if (uInputId == user.uID && uInputPwd == user.pwd) {
                 cout << "Login successful." << endl;
+                return true;
                 }
             --tries;
             if (tries > 0) cout << "Incorrect. Try again." << endl;
