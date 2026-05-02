@@ -95,30 +95,6 @@ class Validator {
 			}
 		}
 
-		// Returns a non-empty string for disease names (letters, digits, spaces, hyphens allowed)
-		static string getDiagnosis() {
-			string input;
-			while(true) {
-				getline(cin >> ws, input);
-				if(input.empty()) {
-					cout << "  [Error] Disease field cannot be empty. Try again: ";
-					continue;
-				}
-				bool valid = true;
-				for(int i = 0; i < (int)input.size(); i++) {
-					if(!isalpha(input[i]) && !isdigit(input[i]) && input[i] != ' ' && input[i] != '-') {
-						valid = false;
-						break;
-					}
-				}
-				if(!valid) {
-					cout << "  [Error] Only letters, digits, spaces and hyphens are allowed. Try again: ";
-					continue;
-				}
-				return input;
-			}
-		}
-
 		// Returns a positive double (for prices and bed charges)
 		static double getPositiveDouble() {
 			double value;
@@ -144,6 +120,89 @@ class Validator {
 				cout << "  [Error] Please enter a positive whole number: ";
 			}
 		}
+
+		// Returns a valid 11-digit numeric phone number
+		static long long getPhone() {
+			string input;
+			while(true) {
+				getline(cin >> ws, input);
+				if(input.size() != 11) {
+					cout << "  [Error] Phone must be exactly 11 digits. Try again: ";
+					continue;
+				}
+				bool valid = true;
+				for(int i = 0; i < (int)input.size(); i++) {
+					if(!isdigit(input[i])) {
+						valid = false;
+						break;
+					}
+				}
+				if(!valid) {
+					cout << "  [Error] Phone must contain digits only. Try again: ";
+					continue;
+				}
+				return stoll(input);
+			}
+		}
+};
+
+
+// ============================================================
+//  CLASS: Person
+//  Abstract base class for all people in the hospital system.
+//  Cannot be instantiated directly — only Doctor and Patient
+//  can be created, both of which must implement set() and display().
+// ============================================================
+class Person {
+protected:
+	string    name;   // full name
+	long long cnic;   // national identity number (13 digits)
+	int       age;    // age in years
+	string    gender; // Male or Female
+	long long phone;  // 11-digit phone number
+
+	// Shared input helper — collects all base fields.
+	// Called by derived classes inside their own set().
+	// Not virtual — just a reusable utility for subclasses.
+	void collectBasicInfo() {
+		cout << "  Enter name: ";
+		name = Validator::getTextOnly();
+		cout << "  Enter CNIC (13 digits): ";
+		cnic = Validator::getCnic();
+		cout << "  Enter age: ";
+		age = Validator::getPositiveInt();
+		cout << "  Enter gender (Male/Female): ";
+		gender = Validator::getTextOnly();
+		cout << "  Enter phone number (11 digits): ";
+		phone = Validator::getPhone();
+	}
+
+public:
+	// Constructor — safe zero/empty defaults for all fields
+	Person() : name(""), cnic(0), age(0), gender(""), phone(0) {}
+
+	// ---- Getters ----
+	string    getName()   const { return name;   }
+	long long getCnic()   const { return cnic;   }
+	int       getAge()    const { return age;    }
+	string    getGender() const { return gender; }
+	long long getPhone()  const { return phone;  }
+
+	// ---- Setters — used only during file loading to restore state ----
+	void setName(const string &val)   { name   = val; }
+	void setCnic(long long val)        { cnic   = val; }
+	void setAge(int val)               { age    = val; }
+	void setGender(const string &val) { gender = val; }
+	void setPhone(long long val)       { phone  = val; }
+
+	// Pure virtual — every derived class MUST implement these two methods.
+	// Leaving either unimplemented makes the derived class abstract too.
+	virtual void set()     = 0;
+	virtual void display() = 0;
+
+	// Virtual destructor — mandatory whenever a class is used as a base.
+	// Ensures derived class destructor is called correctly via base pointer.
+	virtual ~Person() {}
 };
 
 
@@ -169,20 +228,13 @@ struct Medicine {
 };
 
 // Represents a single medicine given to a patient (snapshot at time of prescription)
+// PatientInfo has been dissolved — Patient now inherits identity from Person directly.
 struct Medication {
 	int    medicineId; // ID of the source medicine
 	string name;       // name at time of prescription
 	string type;       // type at time of prescription
 	int    quantity;   // number of units prescribed
 	double price;      // unit price at time of prescription
-};
-
-// Holds the core identity information of a patient
-struct PatientInfo {
-	int       pID;     // unique patient identifier
-	string    name;    // full name
-	string    disease; // diagnosed condition
-	long long cnic;    // national identity number (13 digits)
 };
 
 
@@ -651,15 +703,44 @@ public:
 
 
 // ============================================================
+//  DISEASE LIST
+//  Fixed menu of diseases mapped to hospital specialties.
+//  Used during patient admission to replace free-text diagnosis.
+//  Patient picks a number — system records both disease and specialty.
+// ============================================================
+struct DiseaseEntry {
+	string diseaseName; // what gets stored on the patient record
+	string specialty;   // which doctor specialty should visit this patient
+};
+
+const int DISEASE_COUNT = 10;
+
+DiseaseEntry diseaseList[DISEASE_COUNT] = {
+	{ "Flu",           "General"     },  //  1
+	{ "Fever",         "General"     },  //  2
+	{ "Typhoid",       "General"     },  //  3
+	{ "Hypertension",  "Cardiology"  },  //  4
+	{ "Heart Disease", "Cardiology"  },  //  5
+	{ "Epilepsy",      "Neurology"   },  //  6
+	{ "Migraine",      "Neurology"   },  //  7
+	{ "Fracture",      "Orthopedics" },  //  8
+	{ "Joint Pain",    "Orthopedics" },  //  9
+	{ "Asthma",        "Pulmonology" }   // 10
+};
+
+
+// ============================================================
 //  CLASS: Patient
 //  Represents a single admitted patient.
 //  Stores identity, admission state, and medication history.
 //  Exposes controlled getters for file persistence.
 // ============================================================
-class Patient {
+class Patient : public Person {
 private:
 	static int         nextId;        // shared counter — increments on each new admission
-	PatientInfo        info;          // identity fields
+	int                pID;           // unique patient identifier (was info.pID)
+	string             disease;       // diagnosed condition (from disease menu)
+	string             requiredSpecialty; // specialty needed — derived from disease choice
 	bool               isAdmitted;   // true once patient has been formally admitted
 	bool               isDischarged; // true once patient has been discharged
 	time_t             admitTime;    // unix timestamp of admission
@@ -668,44 +749,69 @@ private:
 	double             admitBedCharge; // per-day bed rate locked in at admission
 	vector<Medication> meds;         // all medications given during this stay
 
+	// Private helper — shows the numbered disease menu and sets disease + specialty.
+	// Called inside set() after collectBasicInfo().
+	void showDiseaseMenu() {
+		printHeader("SELECT DISEASE");
+		for(int i = 0; i < DISEASE_COUNT; i++) {
+			cout << "  " << (i + 1) << ". "
+			     << diseaseList[i].diseaseName
+			     << "  [" << diseaseList[i].specialty << "]" << endl;
+		}
+		printLine();
+		int choice = 0;
+		cout << "  Enter number (1-" << DISEASE_COUNT << "): ";
+		while(true) {
+			cin >> choice;
+			if(choice >= 1 && choice <= DISEASE_COUNT) {
+				break;
+			}
+			cout << "  [Error] Enter a number between 1 and "
+			     << DISEASE_COUNT << ": ";
+		}
+		disease           = diseaseList[choice - 1].diseaseName;
+		requiredSpecialty = diseaseList[choice - 1].specialty;
+		cout << "  [OK] Disease set to: " << disease
+		     << "  |  Specialty: " << requiredSpecialty << endl;
+	}
+
 public:
 	// Constructor — initialises a blank patient record
-	Patient(long long presetCnic = 0, string presetName = "", string presetDisease = "") {
-		info.pID       = 0;
-		info.cnic      = presetCnic;
-		info.name      = presetName;
-		info.disease   = presetDisease;
-		isAdmitted     = false;
-		isDischarged   = false;
-		admitTime      = 0;
-		dischargeTime  = 0;
-		admitBedCharge = 0.0;
+	Patient() {
+		pID               = 0;
+		disease           = "";
+		requiredSpecialty = "";
+		isAdmitted        = false;
+		isDischarged      = false;
+		admitTime         = 0;
+		dischargeTime     = 0;
+		admitBedCharge    = 0.0;
 		memset(&dateTime, 0, sizeof(dateTime));
 	}
 
 	// ---- Getters ----
-	int                       id()               const { return info.pID;       }
-	long long                 getCnic()           const { return info.cnic;      }
-	bool                      getIsDischarged()   const { return isDischarged;   }
-	bool                      getIsAdmitted()     const { return isAdmitted;     }
-	time_t                    getAdmitTime()      const { return admitTime;      }
-	time_t                    getDischargeTime()  const { return dischargeTime;  }
-	double                    getAdmitBedCharge() const { return admitBedCharge; }
-	const PatientInfo&        getInfo()           const { return info;           }
-	const vector<Medication>& getMeds()           const { return meds;           }
-	static int                getNextId()               { return nextId;         }
+	int                       id()                   const { return pID;               }
+	bool                      getIsDischarged()       const { return isDischarged;      }
+	bool                      getIsAdmitted()         const { return isAdmitted;        }
+	time_t                    getAdmitTime()          const { return admitTime;         }
+	time_t                    getDischargeTime()      const { return dischargeTime;     }
+	double                    getAdmitBedCharge()     const { return admitBedCharge;    }
+	string                    getDisease()            const { return disease;           }
+	string                    getRequiredSpecialty()  const { return requiredSpecialty; }
+	const vector<Medication>& getMeds()               const { return meds;             }
+	static int                getNextId()                   { return nextId;           }
 
-	// ---- Setters (used during file loading to restore private state) ----
-	void setCnic(long long value)        { info.cnic    = value; }
-	void setName(const string &val)      { info.name    = val;   }
-	void setDisease(const string &val)   { info.disease = val;   }
-	static void setNextId(int val)       { nextId       = val;   }
+	// ---- Setters — used only during file loading to restore state ----
+	// name, cnic, age, gender, phone setters are inherited from Person
+	void setDisease(const string &val)           { disease           = val; }
+	void setRequiredSpecialty(const string &val) { requiredSpecialty = val; }
+	static void setNextId(int val)               { nextId            = val; }
 
 	// Restores all private state from saved file values.
 	// Used during loading — bypasses normal admission flow intentionally.
 	void restoreState(int pid, bool admitted, bool discharged,
 	                  time_t aTime, time_t dTime, double charge) {
-		info.pID       = pid;
+		pID            = pid;
 		isAdmitted     = admitted;
 		isDischarged   = discharged;
 		admitTime      = aTime;
@@ -732,8 +838,8 @@ public:
 			mktime(&dateTime);
 			isAdmitted     = true;
 			admitBedCharge = bedCharge;
-			info.pID       = ++nextId;
-			cout << "  [OK] Patient admitted. ID: " << info.pID << endl;
+			pID            = ++nextId;
+			cout << "  [OK] Patient admitted. ID: " << pID << endl;
 		}
 	}
 
@@ -746,25 +852,30 @@ public:
 		}
 	}
 
-	// Prompts the user to enter the patient's name and disease
-	void set() {
-		cout << "  Enter patient name: ";
-		info.name = Validator::getTextOnly();
-		if(info.cnic == 0) {
-			cout << "  Enter patient CNIC: ";
-			cin >> info.cnic;
-		}
-		cout << "  Enter diagnosed disease: ";
-		info.disease = Validator::getDiagnosis();
+	// Implements Person::set() — collects personal info then disease from menu
+	void set() override {
+		collectBasicInfo();   // name, cnic, age, gender, phone via Person
+		showDiseaseMenu();    // disease and requiredSpecialty via menu
 	}
 
-	// Displays the patient's full record to the console
+	// Implements Person::display() — shows full identity and medical snapshot
+	void display() override {
+		cout << "  Patient ID        : " << pID               << endl;
+		cout << "  Name              : " << name              << endl;
+		cout << "  CNIC              : " << cnic              << endl;
+		cout << "  Age               : " << age               << endl;
+		cout << "  Gender            : " << gender            << endl;
+		cout << "  Phone             : " << phone             << endl;
+		cout << "  Disease           : " << disease           << endl;
+		cout << "  Required Specialty: " << requiredSpecialty << endl;
+	}
+
+	// Displays the patient's full record including admission dates and bed charge.
+	// Calls display() first for identity/medical info, then adds admission context.
 	void patientHistory() {
 		printHeader("PATIENT RECORD");
-		cout << "  Patient ID    : " << info.pID        << endl;
-		cout << "  Name          : " << info.name       << endl;
-		cout << "  CNIC          : " << info.cnic       << endl;
-		cout << "  Disease       : " << info.disease    << endl;
+		display();
+		printLine();
 		cout << "  Bed Charge/Day: " << admitBedCharge  << endl;
 		cout << "  Admit Date    : " << asctime(&dateTime);
 		if(isDischarged) {
@@ -855,6 +966,337 @@ int Patient::nextId = 0;
 
 
 // ============================================================
+//  SPECIALTY LIST
+//  Fixed menu of doctor specialties — mirrors the disease list.
+//  Guarantees every specialty a doctor can hold matches a disease
+//  category, enabling correct doctor-to-patient routing.
+// ============================================================
+struct SpecialtyEntry {
+	string specialtyName; // displayed in menu and stored on Doctor record
+};
+
+const int SPECIALTY_COUNT = 5;
+
+SpecialtyEntry specialtyList[SPECIALTY_COUNT] = {
+	{ "General"      },  // 1
+	{ "Cardiology"   },  // 2
+	{ "Neurology"    },  // 3
+	{ "Orthopedics"  },  // 4
+	{ "Pulmonology"  }   // 5
+};
+
+
+// ============================================================
+//  CLASS: Doctor
+//  Represents a single doctor in the hospital.
+//  Inherits identity fields from Person.
+//  Adds specialty, shift hours, and duty-check logic.
+// ============================================================
+class Doctor : public Person {
+private:
+	static int nextId;  // shared counter — separate from Patient::nextId
+	int        dID;     // unique doctor identifier
+	string     specialty;   // matched against patient requiredSpecialty
+	int        shiftStart;  // shift start hour (9–17), 24-hour format
+	int        shiftEnd;    // shift end hour (10–19), 24-hour format
+
+	// Private helper — shows the numbered specialty menu and sets specialty.
+	// Called inside set() after collectBasicInfo().
+	void showSpecialtyMenu() {
+		printHeader("SELECT SPECIALTY");
+		for(int i = 0; i < SPECIALTY_COUNT; i++) {
+			cout << "  " << (i + 1) << ". "
+			     << specialtyList[i].specialtyName << endl;
+		}
+		printLine();
+		int choice = 0;
+		cout << "  Enter number (1-" << SPECIALTY_COUNT << "): ";
+		while(true) {
+			cin >> choice;
+			if(choice >= 1 && choice <= SPECIALTY_COUNT) {
+				break;
+			}
+			cout << "  [Error] Enter a number between 1 and "
+			     << SPECIALTY_COUNT << ": ";
+		}
+		specialty = specialtyList[choice - 1].specialtyName;
+		cout << "  [OK] Specialty set to: " << specialty << endl;
+	}
+
+	// Private helper — prompts and validates shift start and end hours.
+	// Start: 9–17   End: 10–19   End must be greater than Start.
+	// Think of it as booking a slot on a 9AM–7PM hospital clock.
+	void inputShiftHours() {
+		printLine();
+		cout << "  Enter shift start hour (9-17, e.g. 9 for 9AM): ";
+		while(true) {
+			cin >> shiftStart;
+			if(shiftStart >= 9 && shiftStart <= 17) {
+				break;
+			}
+			cout << "  [Error] Start hour must be between 9 and 17: ";
+		}
+		cout << "  Enter shift end hour (10-19, e.g. 17 for 5PM): ";
+		while(true) {
+			cin >> shiftEnd;
+			if(shiftEnd >= 10 && shiftEnd <= 19 && shiftEnd > shiftStart) {
+				break;
+			}
+			cout << "  [Error] End hour must be between 10 and 19, and after start hour: ";
+		}
+	}
+
+public:
+	// Constructor — initialises a blank doctor record
+	Doctor() {
+		dID        = 0;
+		specialty  = "";
+		shiftStart = 9;
+		shiftEnd   = 17;
+	}
+
+	// ---- Getters ----
+	int    getDID()        const { return dID;        }
+	string getSpecialty()  const { return specialty;  }
+	int    getShiftStart() const { return shiftStart; }
+	int    getShiftEnd()   const { return shiftEnd;   }
+	static int getNextId()           { return nextId;   }
+	static int incrementNextId()     { return ++nextId; } // used by addDoctor() after duplicate check
+
+	// ---- Setters — used only during file loading to restore state ----
+	// name, cnic, age, gender, phone setters inherited from Person
+	void setDID(int val)               { dID        = val; }
+	void setSpecialty(const string &v) { specialty  = v;   }
+	void setShiftStart(int val)        { shiftStart = val; }
+	void setShiftEnd(int val)          { shiftEnd   = val; }
+	static void setNextId(int val)     { nextId     = val; }
+
+	// Returns true if the given hour falls within this doctor's shift.
+	// Used by SlotManagement to enforce duty-hour boundaries.
+	// Think of it as checking whether a store is open at a given time.
+	bool isOnDutyAt(int hour) const {
+		return (hour >= shiftStart && hour < shiftEnd);
+	}
+
+	// Implements Person::set() — collects personal info, specialty, shift
+	void set() override {
+		collectBasicInfo();    // name, cnic, age, gender, phone via Person
+		showSpecialtyMenu();   // specialty via fixed menu
+		inputShiftHours();     // shift start and end hours
+		// ID is NOT assigned here — DoctorManagement::addDoctor() assigns
+		// it after the duplicate CNIC check passes, same pattern as Patient.
+	}
+
+	// Implements Person::display() — shows full doctor profile
+	void display() override {
+		cout << "  Doctor ID   : " << dID                          << endl;
+		cout << "  Name        : " << name                         << endl;
+		cout << "  CNIC        : " << cnic                         << endl;
+		cout << "  Age         : " << age                          << endl;
+		cout << "  Gender      : " << gender                       << endl;
+		cout << "  Phone       : " << phone                        << endl;
+		cout << "  Specialty   : " << specialty                    << endl;
+		cout << "  Shift       : " << shiftStart << ":00 — "
+		                           << shiftEnd   << ":00"          << endl;
+	}
+};
+
+// Static member definition — exists once, separate from Patient::nextId
+int Doctor::nextId = 0;
+
+
+// ============================================================
+//  CLASS: DoctorManagement
+//  Owns and manages the hospital's doctor roster.
+//  Persists all changes to doctors.txt automatically.
+//  Provides specialty-based lookup for SlotManagement.
+// ============================================================
+class DoctorManagement {
+private:
+	vector<Doctor> doctors; // in-memory list of all doctors
+
+	// Writes the full doctor list to doctors.txt, overwriting previous content.
+	// First line is nextId so the ID counter survives restarts.
+	void saveToFile() {
+		ofstream file("doctors.txt");
+		if(!file.is_open()) {
+			cout << "  [Error] Could not open doctors.txt for writing." << endl;
+			return;
+		}
+		file << Doctor::getNextId() << "\n"; // save ID counter on first line
+		for(int i = 0; i < (int)doctors.size(); i++) {
+			const Doctor &d = doctors[i];
+			file << d.getDID()        << "|"
+			     << d.getName()       << "|"
+			     << d.getCnic()       << "|"
+			     << d.getAge()        << "|"
+			     << d.getGender()     << "|"
+			     << d.getPhone()      << "|"
+			     << d.getSpecialty()  << "|"
+			     << d.getShiftStart() << "|"
+			     << d.getShiftEnd()   << "\n";
+		}
+		file.close();
+	}
+
+	// Returns the vector index of a doctor by their ID, or -1 if not found
+	int findIndexById(int id) {
+		for(int i = 0; i < (int)doctors.size(); ++i) {
+			if(doctors[i].getDID() == id) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+public:
+	// Constructor
+	DoctorManagement() {
+		cout << "  [System] DoctorManagement initialised." << endl;
+	}
+
+	// Loads doctors from doctors.txt on startup.
+	// If no file exists, starts with an empty roster.
+	void loadFromFile() {
+		ifstream file("doctors.txt");
+		if(!file.is_open()) {
+			cout << "  [Info] No doctors file found. Starting with empty roster." << endl;
+			return;
+		}
+		doctors.clear();
+		string line;
+
+		// First line — restore the global doctor ID counter
+		if(getline(file, line) && !line.empty()) {
+			Doctor::setNextId(stoi(line));
+		}
+
+		// Remaining lines — restore each doctor record
+		while(getline(file, line)) {
+			if(line.empty()) {
+				continue;
+			}
+			stringstream ss(line);
+			string token;
+			Doctor d;
+
+			getline(ss, token, '|'); d.setDID(stoi(token));
+			getline(ss, token, '|'); d.setName(token);
+			getline(ss, token, '|'); d.setCnic(stoll(token));
+			getline(ss, token, '|'); d.setAge(stoi(token));
+			getline(ss, token, '|'); d.setGender(token);
+			getline(ss, token, '|'); d.setPhone(stoll(token));
+			getline(ss, token, '|'); d.setSpecialty(token);
+			getline(ss, token, '|'); d.setShiftStart(stoi(token));
+			getline(ss, token, '|'); d.setShiftEnd(stoi(token));
+
+			doctors.push_back(d);
+		}
+		file.close();
+		cout << "  [Info] Doctors loaded: " << doctors.size() << endl;
+	}
+
+	// Prompts the user to register a new doctor into the system
+	void addDoctor() {
+		printHeader("REGISTER NEW DOCTOR");
+		Doctor d;
+		d.set();
+
+		// Duplicate CNIC check — run before assigning ID to avoid wasting counter
+		for(int i = 0; i < (int)doctors.size(); ++i) {
+			if(doctors[i].getCnic() == d.getCnic()) {
+				cout << "  [Error] A doctor with this CNIC already exists." << endl;
+				return;
+			}
+		}
+
+		// Assign ID only after duplicate check passes — same pattern as Patient
+		d.setDID(Doctor::incrementNextId());
+		doctors.push_back(d);
+		saveToFile();
+		cout << "  [OK] Doctor registered. ID: " << d.getDID() << endl;
+	}
+
+	// Removes a doctor from the roster by their ID
+	void removeDoctor() {
+		printHeader("REMOVE DOCTOR");
+		cout << "  Enter Doctor ID to remove: ";
+		int id = 0;
+		cin >> id;
+
+		int idx = findIndexById(id);
+		if(idx == -1) {
+			cout << "  [Error] Doctor ID not found." << endl;
+			return;
+		}
+
+		doctors.erase(doctors.begin() + idx);
+		cout << "  [OK] Doctor removed." << endl;
+		saveToFile();
+	}
+
+	// Displays all doctors currently in the roster
+	void viewAllDoctors() {
+		printHeader("DOCTOR ROSTER");
+		if(doctors.empty()) {
+			cout << "  No doctors registered." << endl;
+			return;
+		}
+		for(int i = 0; i < (int)doctors.size(); i++) {
+			printLine();
+			doctors[i].display();
+		}
+		printLine();
+	}
+
+	// Returns a pointer to a doctor by their ID, or nullptr if not found.
+	// Used by SlotManagement to validate and access doctor details.
+	Doctor* getDoctorById(int id) {
+		for(int i = 0; i < (int)doctors.size(); ++i) {
+			if(doctors[i].getDID() == id) {
+				return &doctors[i];
+			}
+		}
+		return nullptr;
+	}
+
+	// Returns a vector of pointers to all doctors with a matching specialty.
+	// Used by SlotManagement to find eligible doctors for a patient's disease.
+	vector<Doctor*> getDoctorsBySpecialty(const string &spec) {
+		vector<Doctor*> result;
+		for(int i = 0; i < (int)doctors.size(); ++i) {
+			if(doctors[i].getSpecialty() == spec) {
+				result.push_back(&doctors[i]);
+			}
+		}
+		return result;
+	}
+
+	// Main menu loop for doctor management
+	void doctorMenu() {
+		int choice = 0;
+		while(choice != 4) {
+			printHeader("DOCTOR MANAGEMENT");
+			cout << "  1. Register New Doctor" << endl;
+			cout << "  2. View All Doctors"    << endl;
+			cout << "  3. Remove Doctor"       << endl;
+			cout << "  4. Back"                << endl;
+			printLine();
+			cout << "  Choice: ";
+			cin >> choice;
+			switch(choice) {
+				case 1: addDoctor();     break;
+				case 2: viewAllDoctors(); break;
+				case 3: removeDoctor();  break;
+				case 4:                  break;
+				default: cout << "  [Error] Invalid choice." << endl;
+			}
+		}
+	}
+};
+
+
+// ============================================================
 //  CLASS: PatientManagement
 //  Manages the full list of patients in the hospital.
 //  Coordinates with BedManagement and MedManagement.
@@ -876,17 +1318,20 @@ private:
 		}
 		file << Patient::getNextId() << "\n"; // save ID counter on first line
 		for(int i = 0; i < (int)patients.size(); i++) {
-			const Patient     &p   = patients[i];
-			const PatientInfo &inf = p.getInfo();
-			file << inf.pID               << "|"
-			     << inf.name              << "|"
-			     << inf.cnic              << "|"
-			     << inf.disease           << "|"
-			     << p.getIsAdmitted()     << "|"
-			     << p.getIsDischarged()   << "|"
-			     << p.getAdmitTime()      << "|"
-			     << p.getDischargeTime()  << "|"
-			     << p.getAdmitBedCharge() << "\n";
+			const Patient &p = patients[i];
+			file << p.id()                   << "|"
+			     << p.getName()              << "|"
+			     << p.getCnic()              << "|"
+			     << p.getAge()               << "|"
+			     << p.getGender()            << "|"
+			     << p.getPhone()             << "|"
+			     << p.getDisease()           << "|"
+			     << p.getRequiredSpecialty() << "|"
+			     << p.getIsAdmitted()        << "|"
+			     << p.getIsDischarged()      << "|"
+			     << p.getAdmitTime()         << "|"
+			     << p.getDischargeTime()     << "|"
+			     << p.getAdmitBedCharge()    << "\n";
 		}
 		file.close();
 	}
@@ -941,6 +1386,13 @@ public:
 		cout << "  [System] PatientManagement initialised." << endl;
 	}
 
+	// Public lookup — used by SlotManagement to validate patient and read specialty.
+	// Returns pointer to patient by CNIC, or nullptr if not found.
+	// Wraps the private findByCnic() to expose it safely.
+	Patient* getPatientByCnic(long long cnic) {
+		return findByCnic(cnic);
+	}
+
 	// Loads patient records from patients.txt on startup.
 	// First line restores the ID counter, remaining lines restore patient rows.
 	void loadPatientsFromFile() {
@@ -969,7 +1421,11 @@ public:
 			getline(ss, token, '|'); int    pid        = stoi(token);
 			getline(ss, token, '|'); p.setName(token);
 			getline(ss, token, '|'); p.setCnic(stoll(token));
+			getline(ss, token, '|'); p.setAge(stoi(token));
+			getline(ss, token, '|'); p.setGender(token);
+			getline(ss, token, '|'); p.setPhone(stoll(token));
 			getline(ss, token, '|'); p.setDisease(token);
+			getline(ss, token, '|'); p.setRequiredSpecialty(token);
 			getline(ss, token, '|'); bool   admitted   = stoi(token);
 			getline(ss, token, '|'); bool   discharged = stoi(token);
 			getline(ss, token, '|'); time_t aTime      = (time_t)stoll(token);
@@ -1024,13 +1480,6 @@ public:
 	// Admits a new patient — checks bed availability first, then collects info
 	void addPatient() {
 		printHeader("NEW PATIENT ADMISSION");
-		cout << "  Enter patient CNIC: ";
-		long long cnic = Validator::getCnic();
-
-		if(findIndexByCnic(cnic) != -1) {
-			cout << "  [Error] A patient with this CNIC already exists." << endl;
-			return;
-		}
 
 		// Step 1 — confirm a bed is available before collecting any info
 		double assignedCharge = 0.0;
@@ -1040,13 +1489,19 @@ public:
 			return;
 		}
 
-		// Step 2 — collect patient details and formally admit (assigns real ID)
+		// Step 2 — collect all patient details via Person::collectBasicInfo()
+		//           and disease menu via showDiseaseMenu() inside Patient::set()
 		Patient p;
-		p.setCnic(cnic);
 		p.set();
-		p.markAdmitted(assignedCharge);
 
-		// Step 3 — assign the confirmed bed to the patient's real ID
+		// Step 3 — check for duplicate CNIC after input
+		if(findIndexByCnic(p.getCnic()) != -1) {
+			cout << "  [Error] A patient with this CNIC already exists." << endl;
+			return;
+		}
+
+		// Step 4 — formally admit (assigns real ID) then assign bed
+		p.markAdmitted(assignedCharge);
 		bedManager.assignBedByIndex(bedIdx, p.id());
 
 		patients.push_back(p);
@@ -1179,6 +1634,440 @@ public:
 
 
 // ============================================================
+//  STRUCT: Slot
+//  Represents one scheduled visit between a doctor and a patient.
+//  Does not own either — holds their IDs only (aggregation).
+//  Think of it as a calendar appointment card: it references
+//  a doctor and a patient but neither belongs to it.
+// ============================================================
+struct Slot {
+	int    slotId;      // unique slot identifier
+	int    doctorId;    // which doctor  (aggregation — ID only)
+	int    patientId;   // which patient (aggregation — ID only)
+	time_t startTime;   // unix timestamp when visit begins
+	time_t endTime;     // startTime + SLOT_DURATION_SECS
+	bool   isCompleted; // true once the visit has taken place
+};
+
+const int SLOT_DURATION_SECS = 1800; // 30 minutes in seconds
+
+
+// ============================================================
+//  CLASS: SlotManagement
+//  Owns all scheduled slots and enforces all scheduling rules.
+//  Coordinates with DoctorManagement and PatientManagement
+//  via association (references — does not own them).
+//
+//  Think of SlotManagement as a hospital's receptionist desk:
+//  it knows every doctor's calendar and ensures no conflicts.
+// ============================================================
+class SlotManagement {
+private:
+	vector<Slot>       slots;          // owns all slot records (composition)
+	DoctorManagement  &docManager;    // association — to fetch and validate doctors
+	PatientManagement &patManager;    // association — to fetch and validate patients
+	int                nextSlotId;    // auto-incrementing slot ID counter
+
+	// Writes all slots to slots.txt, overwriting previous content.
+	// First line stores the slot ID counter for persistence.
+	void saveToFile() {
+		ofstream file("slots.txt");
+		if(!file.is_open()) {
+			cout << "  [Error] Could not open slots.txt for writing." << endl;
+			return;
+		}
+		file << nextSlotId << "\n";
+		for(int i = 0; i < (int)slots.size(); i++) {
+			const Slot &s = slots[i];
+			file << s.slotId      << "|"
+			     << s.doctorId    << "|"
+			     << s.patientId   << "|"
+			     << s.startTime   << "|"
+			     << s.endTime     << "|"
+			     << s.isCompleted << "\n";
+		}
+		file.close();
+	}
+
+	// Returns true if two time ranges [aStart,aEnd) and [bStart,bEnd) overlap.
+	// Used to detect doctor double-booking.
+	// Two ranges overlap when: aStart < bEnd AND bStart < aEnd
+	// Think of it like two meetings on a calendar — they clash if either
+	// starts before the other ends.
+	bool timesOverlap(time_t aStart, time_t aEnd,
+	                  time_t bStart, time_t bEnd) const {
+		return (aStart < bEnd) && (bStart < aEnd);
+	}
+
+	// Returns true if a doctor already has a slot that overlaps the proposed window.
+	// Enforces Rule 2 — a doctor cannot be in two places at the same time.
+	bool doctorHasConflict(int doctorId,
+	                       time_t propStart, time_t propEnd) const {
+		for(int i = 0; i < (int)slots.size(); i++) {
+			if(slots[i].doctorId == doctorId) {
+				if(timesOverlap(propStart, propEnd,
+				                slots[i].startTime, slots[i].endTime)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	// Returns true if a patient already has any slot today (pending or completed).
+	// Enforces Rule 3 — one doctor visit per patient per day.
+	// Think of it as a ward-round stamp: once the patient is visited today, done.
+	bool patientVisitedToday(int patientId) const {
+		time_t now       = time(nullptr);
+		struct tm *today = localtime(&now);
+		int todayDay     = today->tm_mday;
+		int todayMon     = today->tm_mon;
+		int todayYear    = today->tm_year;
+
+		for(int i = 0; i < (int)slots.size(); i++) {
+			if(slots[i].patientId == patientId) {
+				struct tm *slotDay = localtime(&slots[i].startTime);
+				if(slotDay->tm_mday  == todayDay  &&
+				   slotDay->tm_mon   == todayMon  &&
+				   slotDay->tm_year  == todayYear) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+public:
+	// Constructor — takes references to shared managers (association)
+	SlotManagement(DoctorManagement &dm, PatientManagement &pm)
+		: docManager(dm), patManager(pm), nextSlotId(0) {
+		cout << "  [System] SlotManagement initialised." << endl;
+	}
+
+	// Loads slots from slots.txt on startup.
+	// First line restores the slot ID counter.
+	void loadFromFile() {
+		ifstream file("slots.txt");
+		if(!file.is_open()) {
+			cout << "  [Info] No slots file found. Starting fresh." << endl;
+			return;
+		}
+		slots.clear();
+		string line;
+
+		// First line — restore slot ID counter
+		if(getline(file, line) && !line.empty()) {
+			nextSlotId = stoi(line);
+		}
+
+		// Remaining lines — restore each slot record
+		while(getline(file, line)) {
+			if(line.empty()) {
+				continue;
+			}
+			stringstream ss(line);
+			string token;
+			Slot s;
+			getline(ss, token, '|'); s.slotId      = stoi(token);
+			getline(ss, token, '|'); s.doctorId    = stoi(token);
+			getline(ss, token, '|'); s.patientId   = stoi(token);
+			getline(ss, token, '|'); s.startTime   = (time_t)stoll(token);
+			getline(ss, token, '|'); s.endTime     = (time_t)stoll(token);
+			getline(ss, token, '|'); s.isCompleted = stoi(token);
+			slots.push_back(s);
+		}
+		file.close();
+		cout << "  [Info] Slots loaded: " << slots.size() << endl;
+	}
+
+	// Core scheduling method — auto-suggests free doctors by patient specialty.
+	// Flow:
+	//   1. Admin enters patient CNIC
+	//   2. System reads requiredSpecialty from patient record
+	//   3. Admin enters desired start hour (today, within shift)
+	//   4. System applies 3 conflict rules per doctor
+	//   5. Eligible doctors displayed — admin picks one
+	//   6. Slot created and saved
+	void assignSlot() {
+		printHeader("ASSIGN SLOT");
+
+		// Step 1 — identify patient
+		cout << "  Enter patient CNIC: ";
+		long long cnic = Validator::getCnic();
+		Patient *p = patManager.getPatientByCnic(cnic);
+		if(!p) {
+			cout << "  [Error] Patient not found." << endl;
+			return;
+		}
+		if(!p->getIsAdmitted() || p->getIsDischarged()) {
+			cout << "  [Error] Patient is not currently admitted." << endl;
+			return;
+		}
+
+		// Rule 3 — check if patient already visited today
+		if(patientVisitedToday(p->id())) {
+			cout << "  [Error] This patient has already been visited today." << endl;
+			return;
+		}
+
+		string specialty = p->getRequiredSpecialty();
+		cout << "  Patient: " << p->getName()
+		     << "  |  Required specialty: " << specialty << endl;
+
+		// Step 2 — get all doctors of matching specialty
+		vector<Doctor*> candidates = docManager.getDoctorsBySpecialty(specialty);
+		if(candidates.empty()) {
+			cout << "  [Error] No doctors registered for specialty: "
+			     << specialty << endl;
+			return;
+		}
+
+		// Step 3 — ask admin for desired start hour
+		cout << "  Enter desired start hour for today (9-18): ";
+		int startHour = 0;
+		while(true) {
+			cin >> startHour;
+			if(startHour >= 9 && startHour <= 18) {
+				break;
+			}
+			cout << "  [Error] Hour must be between 9 and 18: ";
+		}
+
+		// Build today's timestamp for the requested hour
+		time_t now       = time(nullptr);
+		struct tm slotTm = *localtime(&now);
+		slotTm.tm_hour   = startHour;
+		slotTm.tm_min    = 0;
+		slotTm.tm_sec    = 0;
+		time_t propStart = mktime(&slotTm);
+		time_t propEnd   = propStart + SLOT_DURATION_SECS;
+
+		// Step 4 — apply Rule 1 (shift) and Rule 2 (conflict) per doctor
+		vector<Doctor*> eligible;
+		for(int i = 0; i < (int)candidates.size(); i++) {
+			Doctor *d = candidates[i];
+
+			// Rule 1 — is the requested hour within the doctor's shift?
+			// A 30-min slot starting at startHour ends at startHour:30,
+			// still within the same hour — so isOnDutyAt(startHour) is sufficient.
+			// isOnDutyAt checks: hour >= shiftStart && hour < shiftEnd
+			if(!d->isOnDutyAt(startHour)) {
+				continue; // outside shift hours
+			}
+
+			// Rule 2 — does the doctor have a conflicting slot?
+			if(doctorHasConflict(d->getDID(), propStart, propEnd)) {
+				continue; // already booked at this time
+			}
+
+			eligible.push_back(d);
+		}
+
+		// Step 5 — show eligible doctors to admin
+		if(eligible.empty()) {
+			cout << "  [Error] No available doctors for specialty '"
+			     << specialty << "' at " << startHour << ":00." << endl;
+			cout << "  Try a different hour or check doctor schedules." << endl;
+			return;
+		}
+
+		printLine();
+		cout << "  Available doctors for " << specialty
+		     << " at " << startHour << ":00:" << endl;
+		printLine();
+		for(int i = 0; i < (int)eligible.size(); i++) {
+			cout << "  " << (i + 1) << ". Dr. " << eligible[i]->getName()
+			     << "  (ID: " << eligible[i]->getDID() << ")"
+			     << "  Shift: " << eligible[i]->getShiftStart()
+			     << ":00 - "   << eligible[i]->getShiftEnd() << ":00"
+			     << endl;
+		}
+		printLine();
+		cout << "  Select doctor (1-" << eligible.size() << "): ";
+		int pick = 0;
+		while(true) {
+			cin >> pick;
+			if(pick >= 1 && pick <= (int)eligible.size()) {
+				break;
+			}
+			cout << "  [Error] Enter a number between 1 and "
+			     << eligible.size() << ": ";
+		}
+
+		// Step 6 — create and save the slot
+		Doctor *chosen = eligible[pick - 1];
+		Slot s;
+		s.slotId      = ++nextSlotId;
+		s.doctorId    = chosen->getDID();
+		s.patientId   = p->id();
+		s.startTime   = propStart;
+		s.endTime     = propEnd;
+		s.isCompleted = false;
+		slots.push_back(s);
+		saveToFile();
+
+		// Confirmation display
+		struct tm *st = localtime(&propStart);
+		cout << "  [OK] Slot #" << s.slotId << " created." << endl;
+		cout << "  Doctor  : Dr. " << chosen->getName() << endl;
+		cout << "  Patient : "     << p->getName()      << endl;
+		cout << "  Time    : "     << startHour << ":00 - "
+		                           << startHour << ":30" << endl;
+		(void)st; // suppress unused warning
+	}
+
+	// Marks a slot as completed by its ID.
+	// Called after a doctor has finished their visit.
+	void completeSlot() {
+		printHeader("COMPLETE SLOT");
+		cout << "  Enter Slot ID to mark as completed: ";
+		int id = 0;
+		cin >> id;
+
+		for(int i = 0; i < (int)slots.size(); i++) {
+			if(slots[i].slotId == id) {
+				if(slots[i].isCompleted) {
+					cout << "  [Error] Slot already marked as completed." << endl;
+					return;
+				}
+				slots[i].isCompleted = true;
+				saveToFile();
+				cout << "  [OK] Slot #" << id << " marked as completed." << endl;
+				return;
+			}
+		}
+		cout << "  [Error] Slot ID not found." << endl;
+	}
+
+	// Displays all slots (pending and completed) for a specific doctor.
+	// Admin enters doctor ID — system lists every appointment on record.
+	void viewDoctorSchedule() {
+		printHeader("DOCTOR SCHEDULE");
+		cout << "  Enter Doctor ID: ";
+		int docId = 0;
+		cin >> docId;
+
+		Doctor *d = docManager.getDoctorById(docId);
+		if(!d) {
+			cout << "  [Error] Doctor ID not found." << endl;
+			return;
+		}
+
+		cout << "  Schedule for Dr. " << d->getName()
+		     << " (" << d->getSpecialty() << ")" << endl;
+		printLine();
+
+		bool found = false;
+		for(int i = 0; i < (int)slots.size(); i++) {
+			if(slots[i].slotId && slots[i].doctorId == docId) {
+				found = true;
+				struct tm *st = localtime(&slots[i].startTime);
+				struct tm *en = localtime(&slots[i].endTime);
+				cout << "  Slot #"    << slots[i].slotId
+				     << "  Patient #" << slots[i].patientId
+				     << "  Start: "   << st->tm_hour << ":" << st->tm_min
+				     << "  End: "     << en->tm_hour << ":" << en->tm_min
+				     << "  Status: "  << (slots[i].isCompleted ? "Completed"
+				                                                : "Pending")
+				     << endl;
+			}
+		}
+		if(!found) {
+			cout << "  No slots found for this doctor." << endl;
+		}
+		printLine();
+	}
+
+	// Displays all visits (pending and completed) received by a specific patient.
+	// Admin enters patient CNIC — system lists every slot on record.
+	void viewPatientVisits() {
+		printHeader("PATIENT VISITS");
+		cout << "  Enter patient CNIC: ";
+		long long cnic = Validator::getCnic();
+
+		Patient *p = patManager.getPatientByCnic(cnic);
+		if(!p) {
+			cout << "  [Error] Patient not found." << endl;
+			return;
+		}
+
+		cout << "  Visit history for: " << p->getName() << endl;
+		printLine();
+
+		bool found = false;
+		for(int i = 0; i < (int)slots.size(); i++) {
+			if(slots[i].patientId == p->id()) {
+				found = true;
+				Doctor *d     = docManager.getDoctorById(slots[i].doctorId);
+				struct tm *st = localtime(&slots[i].startTime);
+				cout << "  Slot #"   << slots[i].slotId
+				     << "  Doctor: " << (d ? d->getName() : "Unknown")
+				     << "  Time: "   << st->tm_hour << ":" << st->tm_min
+				     << "  Status: " << (slots[i].isCompleted ? "Completed"
+				                                              : "Pending")
+				     << endl;
+			}
+		}
+		if(!found) {
+			cout << "  No visits recorded for this patient." << endl;
+		}
+		printLine();
+	}
+
+	// Removes a slot permanently by its ID.
+	// Only pending slots can be removed — completed visits are kept for records.
+	// Think of it as cancelling an appointment before it happens.
+	void removeSlot() {
+		printHeader("REMOVE SLOT");
+		cout << "  Enter Slot ID to remove: ";
+		int id = 0;
+		cin >> id;
+
+		for(int i = 0; i < (int)slots.size(); i++) {
+			if(slots[i].slotId == id) {
+				if(slots[i].isCompleted) {
+					cout << "  [Error] Cannot remove a completed slot — "
+					     << "visit already recorded." << endl;
+					return;
+				}
+				slots.erase(slots.begin() + i);
+				saveToFile();
+				cout << "  [OK] Slot #" << id << " removed." << endl;
+				return;
+			}
+		}
+		cout << "  [Error] Slot ID not found." << endl;
+	}
+
+	// Main menu loop for slot management
+	void slotMenu() {
+		int choice = 0;
+		while(choice != 6) {
+			printHeader("SLOT MANAGEMENT");
+			cout << "  1. Assign Slot"           << endl;
+			cout << "  2. Complete a Slot"       << endl;
+			cout << "  3. Remove a Slot"         << endl;
+			cout << "  4. View Doctor Schedule"  << endl;
+			cout << "  5. View Patient Visits"   << endl;
+			cout << "  6. Back"                  << endl;
+			printLine();
+			cout << "  Choice: ";
+			cin >> choice;
+			switch(choice) {
+				case 1: assignSlot();          break;
+				case 2: completeSlot();        break;
+				case 3: removeSlot();          break;
+				case 4: viewDoctorSchedule();  break;
+				case 5: viewPatientVisits();   break;
+				case 6:                        break;
+				default: cout << "  [Error] Invalid choice." << endl;
+			}
+		}
+	}
+};
+
+
+// ============================================================
 //  STRUCT: UserLogin
 //  Holds admin credentials for system access
 // ============================================================
@@ -1198,7 +2087,9 @@ private:
 	UserLogin         user;
 	BedManagement     bedManager;
 	MedManagement     medManager;
+	DoctorManagement  doctorManager;
 	PatientManagement patientManager;
+	SlotManagement    slotManager;
 
 	// Reads a password from the keyboard, masking each character with '*'.
 	// Handles backspace for corrections.
@@ -1230,17 +2121,21 @@ private:
 public:
 	// Constructor — sets credentials then loads all persisted data from disk
 	HMS(int defaultUserId = 4040, string defaultPassword = "Admin")
-		: patientManager(bedManager, medManager)
+		: patientManager(bedManager, medManager),
+		  slotManager(doctorManager, patientManager)
 	{
 		user.uID = defaultUserId;
 		user.pwd = defaultPassword;
 		cout << "  [System] HMS initialised." << endl;
 
-		// Load order matters — beds and medicines must exist before patients
+		// Load order matters:
+		// beds + medicines before patients, doctors before slots
 		bedManager.loadFromFile();
 		medManager.loadFromFile();
+		doctorManager.loadFromFile();
 		patientManager.loadPatientsFromFile();
 		patientManager.loadMedicationFromFile();
+		slotManager.loadFromFile();
 	}
 
 	// Presents the login screen and validates credentials.
@@ -1282,12 +2177,14 @@ public:
 		}
 
 		int choice = 0;
-		while(choice != 4) {
+		while(choice != 6) {
 			printHeader("HOSPITAL MANAGEMENT SYSTEM");
 			cout << "  1. Patient Management"  << endl;
 			cout << "  2. Medicine Management" << endl;
 			cout << "  3. Bed Management"      << endl;
-			cout << "  4. Exit"                << endl;
+			cout << "  4. Doctor Management"   << endl;
+			cout << "  5. Slot Management"     << endl;
+			cout << "  6. Exit"                << endl;
 			printLine();
 			cout << "  Choice: ";
 			cin >> choice;
@@ -1296,7 +2193,9 @@ public:
 				case 1: patientManager.patientManagementMenu(); break;
 				case 2: medManager.medicineMenu();              break;
 				case 3: bedManager.bedMenu();                   break;
-				case 4:
+				case 4: doctorManager.doctorMenu();             break;
+				case 5: slotManager.slotMenu();                 break;
+				case 6:
 					printLine();
 					cout << "  Goodbye. Stay healthy." << endl;
 					printLine();
